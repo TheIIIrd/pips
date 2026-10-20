@@ -29,7 +29,7 @@ rqrr = { version = "0.9", optional = true, default-features = false }
 
 [dev-dependencies]
 # An independent decoder, to prove the symbols we draw actually scan.
-rqrr = "0.9"
+rqrr = { version = "0.9", default-features = false }
 
 [lints]
 workspace = true

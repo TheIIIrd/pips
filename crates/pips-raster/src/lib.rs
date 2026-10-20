@@ -198,7 +198,7 @@ pub(crate) fn check_size(width: u32, height: u32, frames: usize) -> Result<(), E
         return Err(Error::TooLarge);
     }
     let pixels = (width as usize) * (height as usize);
-    if pixels.checked_mul(frames).map_or(true, |n| n > MAX_PIXELS) {
+    if pixels.checked_mul(frames).is_none_or(|n| n > MAX_PIXELS) {
         return Err(Error::TooLarge);
     }
     Ok(())

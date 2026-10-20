@@ -236,8 +236,8 @@ fn unfilter(data: &[u8], rb: usize, bpp: usize) -> Result<Vec<u8>, Error> {
                 0 => 0,
                 1 => a,
                 2 => b,
-                // The average is at most 255.
-                3 => u8::try_from((u16::from(a) + u16::from(b)) / 2).unwrap_or(0),
+                // Rounds down, as the PNG "Average" filter requires.
+                3 => u8::midpoint(a, b),
                 4 => paeth(a, b, c),
                 _ => return Err(bad("row filter")),
             });

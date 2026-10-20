@@ -238,6 +238,7 @@ fn scan_reads_what_matrix_draws() {
         }
     }
     assert_eq!(pips_qr::scan::read_rgba(&rgba, side, side), vec![text.to_string()]);
-    assert!(pips_qr::scan::read_rgba(&rgba[4..], side, side).is_empty(), "inconsistent size");
-    assert!(pips_qr::scan::read_rgba(&[], 0, 0).is_empty());
+    let none: Vec<String> = Vec::new();
+    assert_eq!(pips_qr::scan::read_rgba(&rgba[4..], side, side), none, "inconsistent size");
+    assert_eq!(pips_qr::scan::read_rgba(&[], 0, 0), none);
 }

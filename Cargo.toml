@@ -1,10 +1,13 @@
 [workspace]
-resolver = "2"
+# "3": dependency versions are chosen to fit rust-version below, so a
+# `cargo update` cannot quietly raise the minimum Rust.
+resolver = "3"
 members = ["crates/*"]
 
 [workspace.package]
 edition = "2021"
-rust-version = "1.81"
+# Edition 2024 in our dependencies (zeroize) sets the floor; checked in CI.
+rust-version = "1.85"
 license = "Apache-2.0"
 
 [workspace.lints.rust]

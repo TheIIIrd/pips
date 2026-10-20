@@ -43,7 +43,7 @@ fn round_trips_binary() {
 fn bad_input_fails_with_message_and_no_output() {
     let out = run(&["-d"], b"bb8");
     assert_eq!(out.status.code(), Some(1));
-    assert!(out.stdout.is_empty());
+    assert_eq!(out.stdout, b"");
     assert_eq!(String::from_utf8_lossy(&out.stderr), "pips-b45: invalid character 'b' at position 0\n");
     // Only one line ending is forgiven.
     assert_eq!(run(&["-d"], b"BB8\n\n").status.code(), Some(1));
