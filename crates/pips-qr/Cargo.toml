@@ -1,0 +1,35 @@
+[package]
+name = "pips-qr"
+version = "0.1.0"
+description = "Pips over QR: single codes and a fountain-coded carousel for payloads too big for one"
+keywords = ["qr", "fountain-code", "base45", "animated-qr", "no_std"]
+categories = ["encoding", "no-std"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "pips-qr"
+path = "src/bin/pips-qr.rs"
+required-features = ["cli"]
+
+[features]
+default = ["matrix", "cli"]
+# Drawing QR symbols needs std (through qrcodegen); the carousel does not.
+matrix = ["dep:qrcodegen"]
+# Reading QR symbols from camera frames, for browsers without
+# BarcodeDetector (Firefox, Safari, desktop Linux Chrome).
+scan = ["dep:rqrr"]
+cli = ["matrix"]
+
+[dependencies]
+pips-base45 = { path = "../pips-base45", default-features = false }
+qrcodegen = { version = "1.8", optional = true }
+rqrr = { version = "0.9", optional = true, default-features = false }
+
+[dev-dependencies]
+# An independent decoder, to prove the symbols we draw actually scan.
+rqrr = "0.9"
+
+[lints]
+workspace = true

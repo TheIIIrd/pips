@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Everything comes from this origin; nothing else may run or load. The
+     identity key lives in this origin's storage, so this policy is what
+     protects it. 'wasm-unsafe-eval' only permits compiling the core. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#1a1b21">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+<link rel="preload" href="fonts/literata-cyrillic-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<title>Pips</title>
+<script type="module" src="src/main.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<noscript>Pips needs JavaScript. · Для Pips нужен JavaScript.</noscript>
+</body>
+</html>

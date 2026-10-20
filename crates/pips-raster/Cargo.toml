@@ -1,0 +1,30 @@
+[package]
+name = "pips-raster"
+version = "0.1.0"
+description = "Import PNG and Aseprite pictures into Pips cards: strict, bounded, palette matching and upscale detection"
+keywords = ["pixel-art", "png", "aseprite", "palette"]
+categories = ["graphics", "parser-implementations", "no-std"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "pips-raster"
+path = "src/bin/pips-raster.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+cli = []
+
+[dependencies]
+pips-format = { path = "../pips-format", default-features = false }
+pips-palette = { path = "../pips-palette", default-features = false }
+miniz_oxide = { version = "0.9", default-features = false, features = ["with-alloc"] }
+
+[dev-dependencies]
+# Reference decoder for tests/png_reference.rs only; see src/png_in.rs.
+png = "0.18"
+
+[lints]
+workspace = true

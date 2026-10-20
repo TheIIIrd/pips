@@ -1,0 +1,26 @@
+[package]
+name = "pips-base45"
+version = "0.1.0"
+description = "Strict, allocation-bounded Base45 (RFC 9285) for no_std, plus a small CLI"
+keywords = ["base45", "rfc9285", "qr", "encoding", "no_std"]
+categories = ["encoding", "no-std"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "pips_base45"
+
+[[bin]]
+name = "pips-b45"
+path = "src/bin/pips-b45.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+# The binary needs std; the library never does. Library users who want to
+# skip building the tool can set default-features = false.
+cli = []
+
+[lints]
+workspace = true

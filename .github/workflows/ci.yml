@@ -1,0 +1,82 @@
+# Checks every push and pull request; publishes the app to GitHub Pages
+# from main. Pages must be set to "GitHub Actions" in the repository
+# settings (Settings → Pages → Source).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Rust — format, lints, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+
+  msrv:
+    name: Rust 1.81 (declared minimum)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.81
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --lib --bins
+
+  site:
+    name: Web — WebAssembly core, type check, site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      # The CLI must match the wasm-bindgen library version in Cargo.lock
+      # exactly; build-wasm.sh checks it again.
+      - name: wasm-bindgen-cli
+        run: |
+          want=$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' Cargo.lock)
+          have=$(wasm-bindgen --version 2>/dev/null | awk '{ print $2 }' || true)
+          [ "$have" = "$want" ] || cargo install wasm-bindgen-cli --version "$want" --locked
+      - run: scripts/build-wasm.sh
+      - name: Type-check the app
+        run: npx --yes -p typescript@5.9.3 tsc -p web/jsconfig.json
+      - run: scripts/build-site.sh
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Publish to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [rust, site]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
