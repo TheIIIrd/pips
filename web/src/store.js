@@ -5,14 +5,14 @@
 // `cards` — one record per card, keyed by digest:
 //   { digest, payload: Uint8Array, cert: Uint8Array|null, edition: {…}|null, mine: boolean,
 //     state: 'collection'|'archive'|'trash', received: ms, trashedAt: ms|null,
-//     from: {nick, key}|null, note: string }
+//     from: {nick, key}|null, note: string, tags?: string[] }
 // Payload bytes are stored exactly as received, so a card passed on later
 // carries everything it arrived with.
 
 /** @typedef {{digest: string, payload: Uint8Array, cert: Uint8Array|null,
  *   edition: {edition: number, of: number, holder: string, day: number}|null, mine: boolean,
  *   state: 'collection'|'archive'|'trash', received: number, trashedAt: number|null,
- *   from: {nick: string, key: string}|null, note: string,
+ *   from: {nick: string, key: string}|null, note: string, tags?: string[],
  *   editions?: import('./state.js').EditionLog}} CardRecord */
 
 /** @type {IDBDatabase} */

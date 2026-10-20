@@ -1,0 +1,7 @@
+/* kit/chips.js */
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; padding: 2px 0; }
+.chips::-webkit-scrollbar { display: none; }
+.chips button { flex: none; border: 0; border-radius: 99px; padding: 6px 12px; font: 500 13px var(--sans); background: var(--raise); color: var(--text2); }
+.chips button i { font-style: normal; color: var(--text3); margin-left: 5px; }
+.chips button[aria-pressed="true"] { background: var(--cobalt); color: #f3f1ea; }
+.chips button[aria-pressed="true"] i { color: #f3f1eaaa; }

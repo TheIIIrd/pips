@@ -22,7 +22,7 @@ env:
 jobs:
   rust:
     name: Rust — format, lints, tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       # Pinned: every Rust release adds lints, and CI should not turn red
@@ -37,7 +37,7 @@ jobs:
 
   msrv:
     name: Rust 1.85 (declared minimum)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85
@@ -46,7 +46,7 @@ jobs:
 
   site:
     name: Web — WebAssembly core, type check, site
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -63,6 +63,22 @@ jobs:
       - run: scripts/build-wasm.sh
       - name: Type-check the app
         run: npx --yes -p typescript@5.9.3 tsc -p web/jsconfig.json
+      # The interface's plain parts (layout, filters, springs), without a browser.
+      - name: Unit tests of the app
+        run: node --test tests/unit/*.test.mjs
+      # The app's journeys in a real browser, with the core just built:
+      # import, exchange by QR, refusals, numbered copies, backups.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+      - name: Browser tests
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm test
       - run: scripts/build-site.sh
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -72,7 +88,7 @@ jobs:
     name: Publish to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [rust, site]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write

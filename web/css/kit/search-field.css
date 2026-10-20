@@ -1,0 +1,12 @@
+/* kit/search-field.js */
+.search-field { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 8px 0 12px; border-radius: 12px;
+  background: var(--raise); color: var(--text3); box-shadow: inset 0 0 0 1px var(--line); }
+.search-field:focus-within { box-shadow: inset 0 0 0 2px var(--cobalt-hi); }
+.search-field .i { width: 18px; height: 18px; }
+.search-field input { flex: 1; min-width: 0; border: 0; background: none; color: var(--text); font-size: 15px; outline: none;
+  -webkit-user-select: text; user-select: text; }
+.search-field input::placeholder { color: var(--text3); }
+.search-field input::-webkit-search-cancel-button { display: none; }
+.search-field .clear { width: 26px; height: 26px; border: 0; border-radius: 50%; padding: 0; background: var(--raise2); color: var(--text2);
+  display: grid; place-items: center; }
+.search-field .clear .i { width: 14px; height: 14px; }

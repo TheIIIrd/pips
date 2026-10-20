@@ -1,5 +1,5 @@
 // @ts-check
-// The frame around the views: bottom tabs, view switching, toasts.
+// The frame around the views: the tab bar, view switching, toasts.
 
 import { h, icon } from '../dom.js';
 import { t } from '../i18n.js';
@@ -12,18 +12,35 @@ let current = '';
 /** @type {HTMLElement} */
 let tabs;
 
-const TABS = /** @type {const} */ (['collection', 'give', 'receive', 'me']);
+/** The tab bar: the collection is home; the scanner, in the middle, is the
+ * main action. A tab either shows a view or runs an action (a sheet). */
+const TABS = /** @type {const} */ ([
+  { name: 'collection', icon: 'collection', label: 'tab.collection' },
+  { name: 'draw', icon: 'brush', label: 'tab.draw' },
+  { name: 'receive', icon: 'scan', label: 'tab.scan', main: true },
+  { name: 'import', icon: 'receive', label: 'tab.import' },
+  { name: 'me', icon: 'me', label: 'tab.profile' },
+]);
 
-/** @param {HTMLElement} root @param {Record<string, View>} all */
-export function mountShell(root, all) {
+/** @param {HTMLElement} root @param {Record<string, View>} all @param {Record<string, () => void>} actions */
+export function mountShell(root, all, actions = {}) {
   Object.assign(views, all);
   for (const v of Object.values(views)) {
     v.el.hidden = true;
     root.append(v.el);
   }
   tabs = h('nav', { class: 'tabs', 'aria-label': 'Pips' },
-    TABS.map((name) => h('button', { dataset: { tab: name }, onclick: () => go(name) }, icon(name), t(`tab.${name}`))));
+    TABS.map((tb) => h('button', {
+      type: 'button', class: 'main' in tb ? 'main' : null, dataset: { tab: tb.name },
+      onclick: () => (views[tb.name] ? go(tb.name) : actions[tb.name]?.()),
+    }, 'main' in tb ? h('i', {}, icon(tb.icon)) : icon(tb.icon), h('span', {}, t(tb.label)))));
   root.append(tabs, toastEl);
+}
+
+/** The feed, a single card and the archive take the whole screen. @param {boolean} hide */
+export function hideTabs(hide) {
+  tabs.classList.toggle('away', hide);
+  document.body.classList.toggle('tabs-away', hide);
 }
 
 /** Shows a view; `arg` is passed to its `show`. @param {string} name @param {any} [arg] */

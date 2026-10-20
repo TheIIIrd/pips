@@ -59,9 +59,24 @@ scripts/build-wasm.sh       # the core for the browser, into web/pkg/
 scripts/serve.sh            # http://localhost:8000
 ```
 
-`scripts/build-site.sh` assembles what GitHub Pages publishes; CI
-(`.github/workflows/ci.yml`) runs formatting, clippy, tests, the minimum
-Rust version, a type check of the app, and deploys `main`.
+Browser tests drive the app in Chromium through its real journeys —
+import, exchange by QR, refusals, numbered copies, backups:
+
+```sh
+cd tests/e2e && npm ci && npx playwright install chromium && npm test
+```
+
+Every parser of outside input has a fuzz target (`fuzz/`, nightly Rust):
+
+```sh
+cargo install cargo-fuzz
+cd fuzz && cargo +nightly fuzz run card corpus/card seeds/card
+```
+
+`scripts/build-site.sh` assembles what GitHub Pages publishes. CI runs
+formatting, clippy, tests, the minimum Rust version, a type check of the
+app and the browser tests, and deploys `main`; a second workflow fuzzes
+every target on each push and for longer once a week.
 
 ## Licence
 

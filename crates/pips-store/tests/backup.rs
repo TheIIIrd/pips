@@ -29,6 +29,7 @@ fn entry(payload: Vec<u8>) -> Entry {
         sender: None,
         note: String::new(),
         issued: None,
+        tags: Vec::new(),
     }
 }
 
@@ -72,6 +73,7 @@ fn sample() -> Backup {
             Entry {
                 certificate: Some(cert.to_bytes()),
                 note: "с фестиваля, стол 12".into(),
+                tags: vec!["фестиваль".into(), "совы".into()],
                 ..entry(encode(&theirs).unwrap())
             },
             Entry {
@@ -154,8 +156,8 @@ fn header_errors_are_told_apart() {
     let file = seal(&sample(), &key(1), NONCE).unwrap();
     assert_eq!(owner(b"PK\x03\x04 this is a zip"), Err(Error::NotABackup));
     let mut newer = file.clone();
-    newer[4] = 2;
-    assert_eq!(owner(&newer), Err(Error::NewerVersion(2)));
+    newer[4] = 3;
+    assert_eq!(owner(&newer), Err(Error::NewerVersion(3)));
 }
 
 // ------------------------------------------------------------ strictness --
@@ -258,4 +260,38 @@ fn the_issue_log_is_checked() {
     let mut b = sample();
     b.cards[1].issued = b.cards[0].issued.clone();
     assert_eq!(seal(&b, &key(1), NONCE), Err(Error::Invalid("an issue log on someone else's card")));
+}
+
+#[test]
+fn a_version_1_body_opens_without_tags() {
+    // Version 2 only adds a tag count (then the tags) after each entry, so a
+    // one-card backup without tags is a version 1 body plus one zero byte.
+    let mut b = sample();
+    b.cards.truncate(1);
+    b.cards[0].tags.clear();
+    let v2 = encode_body(&b).unwrap();
+    assert_eq!(*v2.last().unwrap(), 0);
+    assert_eq!(pips_store::decode_version(&v2[..v2.len() - 1], 1).unwrap(), b);
+    assert_eq!(decode(&v2).unwrap(), b);
+}
+
+#[test]
+fn tags_follow_the_rules() {
+    for (bad, why) in [
+        ("", "empty"),
+        ("Cats", "capital"),
+        ("two words", "space"),
+        ("#cats", "hash"),
+        ("ааааааааааааааааа", "over 32 bytes"),
+    ] {
+        assert!(pips_store::check_tag(bad).is_err(), "{why}");
+    }
+    assert!(pips_store::check_tag("котики").is_ok());
+    let mut b = sample();
+    b.cards[1].tags = vec!["a".into(), "a".into()];
+    let body = encode_body(&b).unwrap();
+    assert_eq!(decode(&body), Err(Error::Invalid("a tag twice")));
+    b.cards[1].tags = (0..6).map(|i| format!("t{i}")).collect();
+    let body = encode_body(&b).unwrap();
+    assert_eq!(decode(&body), Err(Error::Invalid("too many tags")));
 }

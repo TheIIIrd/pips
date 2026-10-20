@@ -19,6 +19,9 @@ pub enum Target {
     Auto,
     /// This palette; each colour becomes the nearest one in it.
     Nearest(PaletteRef),
+    /// The picture's own colours, fitted down to at most this many (2..=32)
+    /// by median cut when it has more; exact when it has no more.
+    Reduce(u8),
 }
 
 /// Colour → palette index, as a sorted array: at most 257 entries, and far
@@ -50,7 +53,7 @@ const COUNT_CAP: usize = 257;
 /// # Errors
 ///
 /// [`Error::TooBig`], [`Error::PartialAlpha`], [`Error::TooManyColors`] for
-/// [`Target::Auto`], the animation errors, or [`Error::Unsupported`] for an
+/// [`Target::Auto`] only, the animation errors, or [`Error::Unsupported`] for an
 /// unknown built-in palette id.
 pub fn to_palette(r: &Raster, target: &Target) -> Result<(Picture, usize, usize), Error> {
     let too_big = Error::TooBig { width: r.width, height: r.height };
@@ -80,31 +83,61 @@ pub fn to_palette(r: &Raster, target: &Target) -> Result<(Picture, usize, usize)
             (palette, pixels, 0)
         }
         Target::Nearest(p) => {
-            // Per pixel, not per surveyed colour: the survey stops counting
-            // at 257 and a picture may hold far more. Pixel art repeats
-            // colours in runs, so the last answer is remembered.
             let pal = p.resolve().ok_or(Error::Unsupported("unknown built-in palette"))?;
-            let mut last: Option<(u32, u8)> = None;
-            let mut changed = 0;
-            let pixels = pixels_in()
-                .map(|px| {
-                    if px[3] == 0 {
-                        return 0;
-                    }
-                    let color = key(*px);
-                    let index = match last {
-                        Some((seen, index)) if seen == color => index,
-                        _ => nearest(Rgb::from_u32(color), &pal, first),
-                    };
-                    last = Some((color, index));
-                    changed += usize::from(pal.colors()[usize::from(index)].to_u32() != color);
-                    index
-                })
-                .collect();
+            let (pixels, changed) = map_nearest(r, &pal, first);
             (p, pixels, changed)
+        }
+        Target::Reduce(n) => {
+            let budget = usize::from(n.clamp(2, 32)) - first;
+            if colors.len() <= budget && colors.len() < COUNT_CAP {
+                // Nothing to fit: exactly as Auto would.
+                return to_palette(r, &Target::Auto);
+            }
+            let mut list: Vec<u32> = Vec::with_capacity(MAX_COLORS);
+            let fitted: Vec<u32> = crate::median_cut(r, budget).iter().map(|c| c.to_u32()).collect();
+            if transparent {
+                list.push(unused_after(&fitted));
+            }
+            list.extend_from_slice(&fitted);
+            while list.len() < pips_palette::MIN_COLORS {
+                list.push(unused_after(&list));
+            }
+            let rgb: Vec<Rgb> = list.iter().map(|&c| Rgb::from_u32(c)).collect();
+            // 2..=32 colours by construction; an error here would be a bug.
+            let pal = Palette::new(&rgb).map_err(|_| Error::Unsupported("palette size"))?;
+            let (pixels, changed) = map_nearest(r, &pal, first);
+            (PaletteRef::Inline(pal), pixels, changed)
         }
     };
     Ok((Picture { width, height, opaque, palette, animation, pixels }, colors.len(), changed))
+}
+
+/// Every pixel to its nearest colour in `pal[first..]`: indices, and how
+/// many pixels changed. Per pixel, not per surveyed colour — the survey
+/// stops counting at 257 and a picture may hold far more. Pixel art repeats
+/// colours in runs, so the last answer is remembered.
+fn map_nearest(r: &Raster, pal: &Palette, first: usize) -> (Vec<u8>, usize) {
+    let mut last: Option<(u32, u8)> = None;
+    let mut changed = 0;
+    let pixels = r
+        .frames
+        .iter()
+        .flat_map(|f| f.pixels.iter())
+        .map(|px| {
+            if px[3] == 0 {
+                return 0;
+            }
+            let color = key(*px);
+            let index = match last {
+                Some((seen, index)) if seen == color => index,
+                _ => nearest(Rgb::from_u32(color), pal, first),
+            };
+            last = Some((color, index));
+            changed += usize::from(pal.colors()[usize::from(index)].to_u32() != color);
+            index
+        })
+        .collect();
+    (pixels, changed)
 }
 
 /// The index of the colour in `palette[from..]` nearest to `c`; ties go to

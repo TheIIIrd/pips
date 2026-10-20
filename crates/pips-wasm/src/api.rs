@@ -50,6 +50,9 @@ pub struct BackupCard {
     /// Own cards: the copies issued so far.
     #[serde(default)]
     pub editions: Option<IssueLogData>,
+    /// The person's tags.
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 /// The author's log of copies issued, as the app stores it.
@@ -205,6 +208,7 @@ fn to_store(d: &BackupData) -> Result<pips_store::Backup> {
                     }),
                     _ => None,
                 },
+                tags: c.tags.clone(),
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -271,6 +275,7 @@ fn from_store(b: &pips_store::Backup) -> BackupData {
                         })
                         .collect(),
                 }),
+                tags: e.tags.clone(),
             })
             .collect(),
     }
@@ -299,6 +304,9 @@ pub struct ImportOptions {
     pub first_frame_only: bool,
     /// Map colours to the nearest in this built-in palette.
     pub palette: Option<u8>,
+    /// Fit the picture's own palette of at most this many colours (2..=32);
+    /// ignored when `palette` is set.
+    pub fit: Option<u8>,
 }
 
 /// A picture ready to become a card, and what was done to get it.
@@ -333,7 +341,11 @@ pub fn import_picture(bytes: &[u8], o: ImportOptions) -> Result<Imported> {
     let options = pips_raster::Options {
         unscale: !o.keep_scale,
         first_frame_only: o.first_frame_only,
-        target: o.palette.map_or(Target::Auto, |id| Target::Nearest(PaletteRef::Builtin(id))),
+        target: match (o.palette, o.fit) {
+            (Some(id), _) => Target::Nearest(PaletteRef::Builtin(id)),
+            (None, Some(n)) => Target::Reduce(n.clamp(2, 32)),
+            (None, None) => Target::Auto,
+        },
     };
     let (picture, r) = pips_raster::import(bytes, &options).map_err(|e| {
         use pips_raster::Error as E;

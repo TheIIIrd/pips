@@ -1,0 +1,16 @@
+/* kit/top-sheet.js — comes down from above, in a card's paper. */
+.top-sheet { position: absolute; z-index: 60; left: 0; right: 0; top: 0; border-radius: 0 0 30px 30px;
+  --shade: var(--paper); --shade-ink: var(--ink); --shade-dim: var(--dim);
+  background: var(--shade); color: var(--shade-ink); box-shadow: 0 24px 50px -24px #000;
+  padding: calc(18px + var(--safe-t)) 16px 12px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  transform: translateY(-101%); }
+.top-sheet.anim { transition: transform .55s cubic-bezier(.2, .9, .25, 1); }
+.top-sheet-body { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.top-sheet-body > b { font: 600 19px/1.15 var(--serif); text-align: center; }
+.top-sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--shade-ink) 25%, transparent); }
+.top-sheet .seg { background: color-mix(in srgb, var(--shade-ink) 8%, transparent); box-shadow: none; }
+.top-sheet .seg button { color: var(--shade-dim); }
+.top-sheet .seg button[aria-pressed="true"] { background: var(--shade); color: var(--shade-ink); box-shadow: 0 1px 3px #0003; }
+.scrim { position: absolute; z-index: 59; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+.scrim.anim { transition: opacity .4s; }
+.scrim.on { pointer-events: auto; }

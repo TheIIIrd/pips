@@ -19,12 +19,14 @@ bytes ─► decode ─► Raster (RGBA frames) ─► unscale ─► to_palette
 - **Unscaling** — an export at ×k is made of k×k blocks; k is the gcd of the
   sides and of every position where colour changes, found in one pass.
 - **Palette** — exact colours: the smallest built-in palette holding them
-  all, else the picture's own colours carried in the card. Or a chosen
-  built-in palette with each colour mapped to the nearest (redmean, integer).
-  Transparency keeps colours off index 0.
+  all, else the picture's own colours carried in the card. Or the
+  picture's own palette *fitted* to at most N colours by median cut, for
+  pictures with too many (`Target::Reduce`). Or a chosen built-in palette
+  with each colour mapped to the nearest (redmean, integer). Transparency
+  keeps colours off index 0.
 
 Refused with the reason, never "fixed": semi-transparent pixels (with their
-place), more than 32 colours without a chosen palette, frames of unequal
+place), more than 32 colours with exact colours asked for, frames of unequal
 duration, anything over 128×128 after unscaling. Input limits — 16 MiB,
 2048 px a side, 8 Mi pixels over all frames — are checked before anything
 is allocated from a header.
@@ -34,6 +36,7 @@ is allocated from a header.
 ```sh
 pips-raster art.aseprite                       # what the conversion would do
 pips-raster -p pico-8 -t "Сова" owl.png -o owl.pips && pips-card inspect owl.pips
+pips-raster --fit 32 painting.png -o painting.pips    # its own 32 colours
 ```
 
 ## Testing
