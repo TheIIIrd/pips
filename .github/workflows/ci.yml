@@ -63,6 +63,22 @@ jobs:
       - run: scripts/build-wasm.sh
       - name: Type-check the app
         run: npx --yes -p typescript@5.9.3 tsc -p web/jsconfig.json
+      # The interface's plain parts (layout, filters, springs), without a browser.
+      - name: Unit tests of the app
+        run: node --test tests/unit/*.test.mjs
+      # The app's journeys in a real browser, with the core just built:
+      # import, exchange by QR, refusals, numbered copies, backups.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+      - name: Browser tests
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm test
       - run: scripts/build-site.sh
       - uses: actions/upload-pages-artifact@v3
         with:

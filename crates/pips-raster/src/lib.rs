@@ -34,6 +34,7 @@ extern crate alloc;
 mod aseprite;
 mod palette;
 mod png_in;
+mod quantize;
 mod scale;
 
 use alloc::vec::Vec;
@@ -42,6 +43,7 @@ use core::fmt;
 use pips_format::{limits, Animation, Card, PaletteRef};
 
 pub use palette::{nearest, to_palette, Target};
+pub use quantize::median_cut;
 pub use scale::{detect_scale, unscale};
 
 /// Largest file accepted, in bytes.
@@ -189,6 +191,34 @@ pub(crate) fn small_sort_by_key<T, K: Ord>(v: &mut [T], key: impl Fn(&T) -> K) {
     }
 }
 
+/// Heap sort: O(n log n) in a few hundred bytes of WebAssembly per element
+/// type, for the lists too long for [`small_sort_by_key`] (a picture's
+/// pixels). Not stable; keys here are unique or ties do not matter.
+pub(crate) fn heap_sort_by_key<T, K: Ord>(v: &mut [T], key: impl Fn(&T) -> K) {
+    let sift = |v: &mut [T], mut root: usize, end: usize| loop {
+        let mut child = 2 * root + 1;
+        if child >= end {
+            break;
+        }
+        if child + 1 < end && key(&v[child]) < key(&v[child + 1]) {
+            child += 1;
+        }
+        if key(&v[root]) >= key(&v[child]) {
+            break;
+        }
+        v.swap(root, child);
+        root = child;
+    };
+    let n = v.len();
+    for i in (0..n / 2).rev() {
+        sift(v, i, n);
+    }
+    for end in (1..n).rev() {
+        v.swap(0, end);
+        sift(v, 0, end);
+    }
+}
+
 /// Checks the size a header claims before anything is allocated from it.
 pub(crate) fn check_size(width: u32, height: u32, frames: usize) -> Result<(), Error> {
     if width == 0 || height == 0 || frames == 0 {
@@ -302,3 +332,31 @@ impl fmt::Display for Error {
 }
 
 impl core::error::Error for Error {}
+
+#[cfg(test)]
+mod tests {
+    use super::{heap_sort_by_key, small_sort_by_key};
+    use alloc::vec::Vec;
+
+    #[test]
+    fn both_sorts_agree_with_std() {
+        let mut x: u64 = 0x9E37_79B9_7F4A_7C15;
+        for len in [0, 1, 2, 3, 10, 257, 1000] {
+            let v: Vec<u32> = (0..len)
+                .map(|_| {
+                    x ^= x << 13;
+                    x ^= x >> 7;
+                    x ^= x << 17;
+                    // Few distinct values: duplicates matter.
+                    u32::try_from(x % 97).unwrap()
+                })
+                .collect();
+            let mut want = v.clone();
+            want.sort_unstable();
+            let (mut a, mut b) = (v.clone(), v);
+            heap_sort_by_key(&mut a, |&k| k);
+            small_sort_by_key(&mut b, |&k| k);
+            assert_eq!((a, b), (want.clone(), want));
+        }
+    }
+}

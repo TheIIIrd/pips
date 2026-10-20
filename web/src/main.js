@@ -7,9 +7,9 @@ import { loadCore, isDevHost } from './core.js';
 import { t, setLanguage, defaultLanguage } from './i18n.js';
 import { load, hasIdentity } from './state.js';
 import { getMeta } from './store.js';
-import { mountShell, go } from './ui/shell.js';
-import { collectionView } from './ui/collection.js';
-import { giveView } from './ui/give.js';
+import { mountShell, go, ask } from './ui/shell.js';
+import { collectionView } from './collection/view.js';
+import { openImport } from './ui/import.js';
 import { receiveView } from './ui/receive.js';
 import { meView } from './ui/me.js';
 import { onboarding } from './ui/onboarding.js';
@@ -32,7 +32,9 @@ async function main() {
   if (loaded.stub) document.body.append(h('div', { class: 'dev-banner' }, 'DEV STUB — NOT SECURE'));
 
   const start = () => {
-    mountShell(root, { collection: collectionView(), give: giveView(), receive: receiveView(), me: meView() });
+    // No editor yet: say so, and offer what makes a card today.
+    const draw = () => ask(t('draw.soon'), { yes: t('tab.import') }).then((yes) => yes && openImport());
+    mountShell(root, { collection: collectionView({ draw }), receive: receiveView(), me: meView() }, { import: openImport, draw });
     go('collection');
   };
   if (hasIdentity()) start();

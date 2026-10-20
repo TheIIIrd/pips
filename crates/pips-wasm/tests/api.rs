@@ -250,6 +250,7 @@ fn backup_round_trip_restores_records_and_editions() {
         note: String::new(),
         edition: None,
         editions: None,
+        tags: vec!["свои".into()],
     };
     let data = BackupData {
         created: 1_760_000_000_999,

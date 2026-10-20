@@ -7,7 +7,6 @@ import { h, icon } from '../dom.js';
 import { t } from '../i18n.js';
 import { app, receive, receivePayload } from '../state.js';
 import { go, toast } from './shell.js';
-import { openViewer } from './viewer.js';
 import { scanner } from './scan.js';
 import { showRecipientCode } from './edition.js';
 
@@ -32,9 +31,32 @@ export function receiveView() {
         h('button', { class: 'btn', onclick: () => fileInput.click() }, icon('file'), t('receive.file')),
         h('button', { class: 'btn', onclick: () => showRecipientCode() }, icon('key'), t('edition.my-code'))),
       h('div', { class: 'group' },
-        h('div', { class: 'field' }, icon('link'), linkInput),
-        h('button', { class: 'btn wide', onclick: () => { handle(linkInput.value); linkInput.value = ''; } }, t('receive.paste'))),
+        h('div', { class: 'field' },
+          linkInput,
+          h('button', { class: 'icon-btn field-btn', 'aria-label': t('receive.paste'), title: t('receive.paste'), onclick: () => pasteLink() }, icon('link')))),
       fileInput));
+
+  // Whatever lands in the field is read at once: pasted, or typed and Enter.
+  const submit = () => {
+    const v = linkInput.value.trim();
+    linkInput.value = '';
+    if (v) handle(v);
+  };
+  linkInput.addEventListener('paste', () => setTimeout(submit));
+  linkInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+
+  /** The chain button: straight from the clipboard where the browser allows
+   * it; otherwise the field takes focus for a manual paste. */
+  async function pasteLink() {
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) return toast(t('receive.clipboard-empty'));
+      handle(text);
+    } catch {
+      linkInput.focus();
+      toast(t('receive.paste-here'));
+    }
+  }
 
   /** @type {any} */
   let joiner = null;
@@ -107,9 +129,8 @@ export function receiveView() {
   /** @param {{status: string, digest: string}} r */
   function done(r) {
     stopCamera();
-    const entry = app.cards.get(r.digest);
-    go(entry?.rec.mine ? 'give' : 'collection', entry?.rec.mine ? r.digest : undefined);
-    if (entry && !entry.rec.mine) openViewer([r.digest], 0, 'collection');
+    // The card opens large in the collection, where it now is.
+    go('collection', { open: r.digest });
     toast(t(r.status === 'added' ? 'receive.got' : 'receive.dup'));
   }
 

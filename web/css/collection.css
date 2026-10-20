@@ -1,0 +1,119 @@
+/* The collection screen (src/collection/). Everything here is positioned by
+   script each frame; the styles only say what things look like. */
+
+.collection-view { inset: 0; touch-action: none; -webkit-user-select: none; user-select: none; overflow: hidden; }
+.collection-bar { position: absolute; z-index: 50; left: 0; right: 0; top: 0; gap: 8px; padding-right: 16px;
+  background: linear-gradient(var(--void) 72%, #1a1b2100); pointer-events: none; }
+.collection-bar > * { pointer-events: auto; }
+.collection-bar .sub { display: flex; gap: 8px; align-items: center; min-height: 18px; white-space: nowrap; overflow: hidden; }
+.pill { border: 0; border-radius: 99px; padding: 8px 14px; font-size: 14px; font-weight: 500; background: var(--raise2); color: var(--text); flex: none; }
+.filter-chip { border: 0; border-radius: 99px; padding: 1px 9px; font-size: 12px; font-weight: 500; background: #6d8fd62e; color: var(--cobalt-hi);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.safe-probe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+
+/* ------------------------------------------------------------- stage -- */
+.stage-host { position: absolute; inset: 0; z-index: 0; }
+.frame.on-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+/* --cap: how much of the caption shows, 0 (a bare tile) … 1 (the full frame). */
+.on-stage .front, .turn .front { padding-bottom: calc(3.6cqw * (1 - var(--cap, 1))); }
+.on-stage .cap, .turn .cap { height: calc((17cqw + 8px) * var(--cap, 1)); min-height: 0; opacity: calc(var(--cap, 1) * 1.4 - .4); }
+.collection-view.selecting .on-stage::before { content: ""; position: absolute; z-index: 2; right: 6%; top: 6%; width: 22px; height: 22px; border-radius: 50%;
+  background: #0007; box-shadow: inset 0 0 0 1.5px #fffc; }
+.collection-view.selecting .on-stage.chosen::before { background: var(--cobalt-hi) center/70% no-repeat; box-shadow: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1b21' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E"); }
+.on-stage.chosen::after { content: ""; position: absolute; inset: -3px; border-radius: 6px; box-shadow: 0 0 0 3px var(--cobalt-hi); pointer-events: none; }
+
+/* Group labels: a cell of the grid, type sized to the cell. */
+.stage-label { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 0 4px 8px; pointer-events: none; }
+.stage-label b { font: 600 1em/1.1 var(--serif); color: var(--text); }
+.stage-label span { font-size: .68em; color: var(--text3); margin-top: 3px; }
+.stage-label.by-author b { font-family: var(--sans); overflow-wrap: anywhere; line-height: 1.15; }
+
+/* -------------------------------------------------------------- turn -- */
+.turn { position: absolute; z-index: 20; left: 0; top: 0; perspective: 1100px; pointer-events: none; }
+.turn-flip { position: absolute; inset: 0; transform-style: preserve-3d; }
+.turn-flip > .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: none; box-shadow: none; }
+.turn-flip > .front-face .frame .face { box-shadow: 0 30px 60px -30px #000, 0 2px 4px #0006; }
+.turn-flip > .back-face { transform: rotateY(180deg); }
+.turn-flip > .back-face.live { pointer-events: auto; }
+.turn-flip > .back-face:not(.live) * { pointer-events: none !important; }
+
+/* The back: the card's own paper, set like a postcard. Sizes in em follow
+   the card (the twin sets the font size from its width). */
+.back-in { position: absolute; inset: 0; border-radius: 3px; background: var(--shade); color: var(--shade-ink);
+  box-shadow: 0 30px 60px -30px #000, 0 2px 4px #0006; padding: 7% 7.5% 6%; display: flex; flex-direction: column; gap: .8em;
+  overflow-y: auto; scrollbar-width: none; font-size: inherit; line-height: 1.4; }
+.back-in header { display: flex; gap: .6em; align-items: flex-start; }
+.back-in header > div { flex: 1; min-width: 0; }
+.back-in h3 { margin: 0; font: 600 1.5em/1.1 var(--serif); color: var(--shade-ink); text-wrap: balance; }
+.back-in .by { margin-top: .2em; color: var(--shade-dim); }
+.back-in .pen { flex: none; width: 2.5em; height: 2.5em; margin: -.3em -.4em 0 0; border: 0; border-radius: 50%; padding: 0; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--shade-ink) 8%, transparent); color: var(--shade-ink); }
+.back-in .pen .i { width: 1.3em; height: 1.3em; }
+.back-in.editing .pen { background: var(--shade-ink); color: var(--shade); }
+.back-in dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .4em 1em; padding-top: .7em;
+  border-top: 1px solid color-mix(in srgb, var(--shade-dim) 35%, transparent); }
+.back-in dt { font-size: .74em; letter-spacing: .07em; text-transform: uppercase; color: var(--shade-dim); padding-top: .2em; }
+.back-in dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.back-in dd.ok { color: color-mix(in srgb, #2f7a3e 80%, var(--shade-ink)); font-weight: 600; }
+.back-in dd.bad { color: #a3332b; font-weight: 600; }
+.back-in .mini-btn { border: 0; border-radius: .4em; padding: .1em .5em; font-size: .85em; background: color-mix(in srgb, var(--shade-ink) 10%, transparent); color: var(--shade-ink); }
+/* Two rows of tags at most; the room is there even when empty. */
+.back-in .tags { flex: none; display: flex; flex-wrap: wrap; align-content: flex-start; gap: .4em; height: calc(2 * 1.9em + .4em); overflow: hidden; }
+.back-in .tags .hint { margin: 0; color: var(--shade-dim); font-size: .88em; padding: .35em 0; }
+.back-in .tag { height: 1.9em; border: 0; border-radius: 99px; padding: 0 .75em; font-size: .88em; line-height: 1.9em; white-space: nowrap;
+  background: color-mix(in srgb, var(--shade-ink) 9%, transparent); color: var(--shade-ink); }
+.back-in.editing .tag:not(.add)::after { content: " ×"; color: var(--shade-dim); }
+.back-in .tag.add { width: 7em; text-align: left; background: none; color: var(--shade-dim);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--shade-dim) 60%, transparent); }
+input.tag.add { border: 0; color: var(--shade-ink); outline: none; font-family: inherit; }
+input.tag.add::placeholder { color: var(--shade-dim); }
+/* The note is a fixed box: what fits is what can be written, like on paper. */
+.back-in textarea { flex: none; width: 100%; height: calc(4 * 1.45em + 1.1em); line-height: 1.45em; overflow: hidden; resize: none; border: 0;
+  border-radius: .5em; padding: .55em .7em; font: inherit; color: var(--shade-ink); -webkit-user-select: text; user-select: text; touch-action: pan-y;
+  background: color-mix(in srgb, var(--shade-ink) 6%, transparent) repeating-linear-gradient(transparent 0 calc(1.45em - 1px),
+    color-mix(in srgb, var(--shade-ink) 10%, transparent) calc(1.45em - 1px) 1.45em) content-box; }
+.back-in textarea::placeholder { color: var(--shade-dim); }
+.back-in textarea[readonly] { pointer-events: none; }
+.back-in textarea:focus-visible { outline: 2px solid color-mix(in srgb, var(--shade-ink) 30%, transparent); outline-offset: 0; }
+.back-in .tech { font-size: .78em; color: var(--shade-dim); }
+.shake { animation: shake .32s; }
+@keyframes shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+
+/* ----------------------------------------------------- search panel -- */
+.search-panel { position: absolute; z-index: 30; left: 0; right: 0; top: 0; padding: 0 16px; will-change: transform; }
+.search-opts { display: flex; gap: 8px; margin: 10px 0; align-items: center; }
+.search-opts .seg { flex: 1; width: auto; margin: 0; }
+.group-btn { flex: none; border: 0; border-radius: 11px; background: var(--raise); color: var(--text2); font-size: 13px; font-weight: 500;
+  padding: 9px 12px; box-shadow: inset 0 0 0 1px var(--line); }
+.search-none { margin: 0; padding: 40px 8px; text-align: center; color: var(--text3); font-size: 14px; }
+
+/* --------------------------------------------------------- the rest -- */
+.fly-layer { position: absolute; inset: 0; z-index: 47; pointer-events: none; }
+.mini-paper { width: 56px; height: 56px; border-radius: 3px; background: var(--shade); padding: 4px; box-shadow: 0 6px 14px -8px #000; }
+.mini-paper canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.place-empty { position: absolute; z-index: 4; left: 32px; right: 32px; top: 44%; margin: 0; text-align: center; color: var(--text3);
+  font-size: 14px; line-height: 1.45; pointer-events: none; }
+.coach { position: absolute; z-index: 35; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px);
+  bottom: calc(var(--tabs) + var(--safe-b) + 20px); padding: 8px 14px; border-radius: 12px; background: var(--raise2); text-align: center;
+  font-size: 12.5px; color: var(--text2); pointer-events: none; box-shadow: 0 8px 20px -10px #000; }
+
+/* An empty collection: the person's own calling card, and two ways to begin. */
+.first-run { position: absolute; z-index: 5; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: calc(90px + var(--safe-t)) 28px calc(var(--tabs) + var(--safe-b) + 24px); text-align: center; }
+.me-card { width: min(210px, 56vw); border: 0; border-radius: 4px; padding: 5.5%; background: var(--paper); color: var(--ink); text-align: left;
+  box-shadow: 0 30px 60px -30px #000, 0 2px 4px #0006; transform: rotate(-2deg); }
+.me-art canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
+.me-card b { display: block; font: 600 17px/1.2 var(--serif); margin-top: 10px; }
+.me-card small { display: block; font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+.first-run h2 { margin: 12px 0 0; font: 600 21px var(--serif); }
+.first-run p { margin: 0; color: var(--text2); font-size: 14px; max-width: 34ch; line-height: 1.45; }
+.first-run .row-btns { width: min(320px, 100%); margin-top: 4px; }
+
+/* The share sheet's code. */
+.share-code { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+.share-code p { margin: 0; font-size: 13px; text-align: center; max-width: 34ch; color: var(--shade-dim); }
+.share-code p.small { font-size: 11.5px; }
+.share-code .qr-box { box-shadow: none; }
+.share-code .edition-panel { width: 100%; margin: 0; color: var(--shade-ink); }

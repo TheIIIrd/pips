@@ -147,6 +147,16 @@ export async function purge(digest) {
   changed();
 }
 
+/** The person's tags on a card, already normal (see collection/query.js).
+ * @param {string} digest @param {string[]} tags */
+export async function setTags(digest, tags) {
+  const e = app.cards.get(digest);
+  if (!e) return;
+  e.rec = { ...e.rec, tags: [...new Set(tags)].slice(0, 5) };
+  await store.putCard(e.rec);
+  changed();
+}
+
 /** @param {string} digest @param {string} note */
 export async function setNote(digest, note) {
   const e = app.cards.get(digest);
@@ -221,23 +231,28 @@ export async function restoreBackup(bytes) {
     if (here) {
       known++;
       const note = !here.rec.note && c.note ? c.note : here.rec.note;
+      const tags = here.rec.tags?.length ? here.rec.tags : c.tags ?? [];
       // The longer issue log wins: copy numbers must never be reused.
       const longer = (c.editions?.issued.length ?? 0) > (here.rec.editions?.issued.length ?? 0);
-      if (note !== here.rec.note || longer) {
-        here.rec = { ...here.rec, note, ...(longer ? { editions: c.editions } : {}) };
+      if (note !== here.rec.note || longer || tags !== here.rec.tags) {
+        here.rec = { ...here.rec, note, tags, ...(longer ? { editions: c.editions } : {}) };
         await store.putCard(here.rec);
       }
       continue;
     }
     const rec = {
       digest: i.digest, payload: c.payload, cert: c.cert ?? null, edition: c.edition ?? null, mine: c.mine,
-      state: c.state, received: c.received, trashedAt: c.trashedAt ?? null, from: c.from ?? null, note: c.note,
+      state: c.state, received: c.received, trashedAt: c.trashedAt ?? null, from: c.from ?? null, note: c.note, tags: c.tags ?? [],
       ...(c.editions ? { editions: c.editions } : {}),
     };
     await store.putCard(rec);
     app.cards.set(i.digest, { rec, card: i.card, author: i.author ?? null });
     added++;
   }
+  // The file restored from is a backup holding these cards: as far as the
+  // reminder goes, it counts like one just made, unless a newer one exists.
+  const last = await lastBackup();
+  if (!last || last.at < b.created) await store.setMeta('lastBackup', { at: b.created, count: b.cards.length });
   const p = app.profile;
   const takeProfile = !p.handle && !p.link && (b.profile.handle || b.profile.link || b.profile.nick);
   if (takeProfile) await setProfile({ nick: b.profile.nick || p.nick, handle: b.profile.handle ?? null, link: b.profile.link });

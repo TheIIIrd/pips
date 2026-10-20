@@ -6,29 +6,11 @@ import { t, language, setLanguage, date } from '../i18n.js';
 import { app, setProfile, addOwn, receive, backdate, makeBackup, restoreBackup, lastBackup } from '../state.js';
 import { isPersisted, setMeta, memoryOnly } from '../store.js';
 import { toast, ask, go } from './shell.js';
+import { qrText } from './qr.js';
 import { isDevHost } from '../core.js';
+import { identicon } from '../kit/identicon.js';
 
 const NETWORKS = ['telegram', 'instagram', 'x', 'bluesky', 'mastodon', 'vk', 'tiktok', 'other'];
-const PIPS16 = ['#f7f3ea', '#cfc8ba', '#8a8299', '#4a4458', '#17151f', '#f0b38a', '#b9693f', '#6e3d2b', '#c4392f', '#e8a62c', '#8cc24a', '#4e7a3a', '#7fc4e8', '#3b5fa8', '#7b5bbf', '#d96fa0'];
-
-/** A symmetric 8×8 pattern from the key, so a person can tell keys apart at a glance. @param {string} hex */
-export function identicon(hex) {
-  const cv = /** @type {HTMLCanvasElement} */ (h('canvas', { width: 8, height: 8 }));
-  const g = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
-  g.fillStyle = '#1f2129';
-  g.fillRect(0, 0, 8, 8);
-  const bytes = hex.match(/../g)?.map((x) => parseInt(x, 16)) ?? [];
-  const colour = PIPS16[5 + (bytes[31] % 11)];
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 4; x++) {
-      if (!((bytes[y] >> x) & 1)) continue;
-      g.fillStyle = colour;
-      g.fillRect(x, y, 1, 1);
-      g.fillRect(7 - x, y, 1, 1);
-    }
-  }
-  return cv;
-}
 
 export function meView() {
   const body = h('div');
@@ -44,7 +26,7 @@ export function meView() {
     const handle = byteLimit(/** @type {HTMLInputElement} */ (h('input', { value: p.handle?.text ?? '', autocomplete: 'off' })), 48);
     const link = byteLimit(/** @type {HTMLInputElement} */ (h('input', { value: p.link, placeholder: 'kitsu.art', autocomplete: 'off', inputMode: 'url' })), 64);
     const error = h('div', { class: 'error' });
-    const secret = h('div');
+    const secret = h('div', { class: 'secret' });
     const lang = /** @type {HTMLSelectElement} */ (h('select', {
       onchange: async () => {
         await setMeta('language', lang.value);
@@ -73,15 +55,34 @@ export function meView() {
       toast(t('me.saved'));
     };
 
+    // Each button shows its secret and, pressed again, hides it; only one
+    // is open at a time, and leaving the tab hides both.
+    /** @type {'words'|'paper'|null} */
+    let shown = null;
+    const wordsBtn = h('button', { class: 'btn', onclick: () => reveal('words') });
+    const paperBtn = h('button', { class: 'btn', onclick: () => reveal('paper') });
+    const labels = () => {
+      wordsBtn.replaceChildren(icon('key'), t(shown === 'words' ? 'me.words.hide' : 'me.words'));
+      paperBtn.replaceChildren(t(shown === 'paper' ? 'me.paper.hide' : 'me.paper'));
+    };
+    labels();
     const reveal = async (/** @type {'words'|'paper'} */ what) => {
+      if (shown === what) {
+        shown = null;
+        secret.replaceChildren();
+        return labels();
+      }
       if (!(await ask(t('me.secret.confirm'), { yes: t('ask.show') }))) return;
+      shown = what;
       if (what === 'words') {
         replace(secret, h('div', { class: 'word-grid' }, app.identity.words().split(' ').map((w) => h('span', {}, w))));
       } else {
-        // The paper key is already text in the QR alphabet: draw it directly.
+        // The QR is what gets printed; the text stays folded away unless asked for.
         const paper = app.identity.paper();
-        replace(secret, paperCode(paper), h('p', { class: 'hint' }, paper));
+        replace(secret, qrText(paper, 240),
+          h('details', { class: 'paper-text' }, h('summary', {}, t('me.paper.text')), h('code', {}, paper)));
       }
+      labels();
     };
 
     replace(body,
@@ -90,13 +91,11 @@ export function meView() {
         h('div', { class: 'field' }, h('label', {}, t('me.nick')), nick),
         h('div', { class: 'field' }, h('label', {}, t('me.network')), network),
         h('div', { class: 'field' }, h('label', {}, t('me.handle')), handle),
-        h('div', { class: 'field' }, h('label', {}, t('me.link')), link),
+        h('div', { class: 'field' }, h('label', {}, t('me.link')), h('span', { class: 'prefix', 'aria-hidden': 'true' }, 'https://'), link),
         h('p', { class: 'hint' }, t('me.link.hint')), error,
         h('button', { class: 'btn key wide', onclick: save }, t('me.save'))),
       h('div', { class: 'group' }, h('h2', {}, t('me.key')),
-        h('div', { class: 'row-btns' },
-          h('button', { class: 'btn', onclick: () => reveal('words') }, icon('key'), t('me.words')),
-          h('button', { class: 'btn', onclick: () => reveal('paper') }, t('me.paper'))),
+        h('div', { class: 'row-btns' }, wordsBtn, paperBtn),
         secret),
       await backupGroup(),
       h('div', { class: 'group' }, h('h2', {}, t('me.language')), h('div', { class: 'field' }, lang)),
@@ -124,16 +123,10 @@ export function meView() {
   return { el, show: render };
 }
 
-/** Backup: save, restore, and how stale the last copy is. */
+/** Backup: save, restore, and how stale the last copy is. The group redraws
+ * itself after each action, so its status is never out of date. */
 async function backupGroup() {
-  const last = await lastBackup();
-  const total = app.cards.size;
-  const fresh = last ? Math.max(0, total - last.count) : total;
-  const stale = total > 0 && (!last || fresh >= 10);
-  const status = !last
-    ? t('backup.never')
-    : `${t('backup.last', date(last.at, { day: 'numeric', month: 'long', year: 'numeric' }), last.count)}${fresh ? ` · ${t('backup.since', fresh)}` : ''}`;
-
+  const box = h('div', { class: 'group' });
   const input = /** @type {HTMLInputElement} */ (h('input', { type: 'file', accept: '.pipsbak,application/octet-stream', hidden: true }));
   input.addEventListener('change', async () => {
     const f = input.files?.[0];
@@ -145,6 +138,7 @@ async function backupGroup() {
     } catch (e) {
       toast(backupError(/** @type {any} */ (e)));
     }
+    await draw();
   });
 
   const save = async () => {
@@ -160,14 +154,27 @@ async function backupGroup() {
     } catch (e) {
       toast(backupError(/** @type {any} */ (e)));
     }
+    await draw();
   };
 
-  return h('div', { class: 'group' }, h('h2', {}, t('backup.title')),
-    h('p', { class: `hint${stale ? ' warn-text' : ''}`, style: { marginTop: '0' } }, status),
-    h('div', { class: 'row-btns' },
-      h('button', { class: `btn${stale ? ' key' : ''}`, onclick: save }, t('backup.save')),
-      h('button', { class: 'btn', onclick: () => input.click() }, t('backup.restore'))),
-    h('p', { class: 'hint' }, t('backup.hint')), input);
+  async function draw() {
+    const last = await lastBackup();
+    const total = app.cards.size;
+    const fresh = last ? Math.max(0, total - last.count) : total;
+    const stale = total > 0 && (!last || fresh >= 10);
+    const status = !last
+      ? t('backup.never')
+      : `${t('backup.last', date(last.at, { day: 'numeric', month: 'long', year: 'numeric' }), last.count)}${fresh ? ` · ${t('backup.since', fresh)}` : ''}`;
+    box.replaceChildren(h('h2', {}, t('backup.title')),
+      h('p', { class: `hint${stale ? ' warn-text' : ''}`, style: { marginTop: '0' } }, status),
+      h('div', { class: 'row-btns' },
+        h('button', { class: `btn${stale ? ' key' : ''}`, onclick: save }, t('backup.save')),
+        h('button', { class: 'btn', onclick: () => input.click() }, t('backup.restore'))),
+      h('p', { class: 'hint' }, t('backup.hint')), input);
+  }
+
+  await draw();
+  return box;
 }
 
 /** @param {{code?: string, message?: string}} e */
@@ -178,19 +185,6 @@ function backupError(e) {
   return text === key ? `${t('err.generic')}: ${e?.message ?? e}` : text;
 }
 
-/** The paper key as a QR code of its own text. @param {string} text */
-function paperCode(text) {
-  const m = app.core.qrMatrix(text);
-  const side = m.size + 8, scale = Math.floor(240 / side);
-  const cv = /** @type {HTMLCanvasElement} */ (h('canvas', { width: side, height: side }));
-  cv.style.width = cv.style.height = `${side * scale}px`;
-  const g = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
-  g.fillStyle = '#fff';
-  g.fillRect(0, 0, side, side);
-  g.fillStyle = '#171717';
-  for (let i = 0; i < m.modules.length; i++) if (m.modules[i]) g.fillRect(4 + (i % m.size), 4 + Math.floor(i / m.size), 1, 1);
-  return h('div', { class: 'qr-box', style: { width: 'fit-content', margin: '12px auto 0' } }, cv);
-}
 
 /** Without the scheme, and with the host in lower case, as the format wants;
  * the path keeps its case. @param {string} s */

@@ -14,7 +14,7 @@
 //! reveals nothing; a lost phone plus the file is recovered from the words.
 //!
 //! ```text
-//! header      "PPBK", version u8 = 1, owner public key [32], nonce [24]
+//! header      "PPBK", version u8 = 2, owner public key [32], nonce [24]
 //! sealed      XChaCha20-Poly1305(key, nonce, aad = header, body)
 //! key         SHA-256("pips-v1:backup" || seed)
 //! ```
@@ -48,7 +48,11 @@
 //!     of       u16                  run size, 0 for open
 //!     count    u16                  copies issued, numbered 1..=count
 //!     copies:  edition u16, day u32, holder [32], nick str8
+//!   tags       u8 count ≤ MAX_TAGS, then each str8 ≤ MAX_TAG    (version 2)
 //! ```
+//!
+//! Version 1 is the same without tags, and still opens: its cards simply
+//! have none.
 //!
 //! The issue log matters as much as the cards: without it a restored
 //! device would start numbering copies from 1 again.
@@ -78,13 +82,17 @@ use zeroize::Zeroizing;
 /// File signature.
 pub const MAGIC: [u8; 4] = *b"PPBK";
 /// Format version.
-pub const VERSION: u8 = 1;
+pub const VERSION: u8 = 2;
 /// Bytes before the sealed body.
 pub const HEADER_LEN: usize = 4 + 1 + 32 + 24;
 /// Most cards in one backup.
 pub const MAX_CARDS: usize = 100_000;
 /// Longest note, in bytes.
 pub const MAX_NOTE: usize = 4000;
+/// Most tags on one card.
+pub const MAX_TAGS: usize = 5;
+/// Longest tag, in bytes.
+pub const MAX_TAG: usize = 32;
 /// Largest backup file accepted.
 pub const MAX_FILE: usize = 64 * 1024 * 1024;
 
@@ -147,6 +155,8 @@ pub struct Entry {
     pub note: String,
     /// For own cards: the copies issued so far.
     pub issued: Option<IssueLog>,
+    /// The person's tags, for finding cards: see [`check_tag`].
+    pub tags: Vec<String>,
 }
 
 /// The copies of an own card the author has issued.
@@ -268,7 +278,7 @@ pub fn open(bytes: &[u8], key: &SecretKey) -> Result<Backup, Error> {
     let nonce = XNonce::from_slice(&header[HEADER_LEN - 24..]);
     let body =
         Zeroizing::new(cipher(key).decrypt(nonce, Payload { msg: sealed, aad: header }).map_err(|_| Error::Damaged)?);
-    let backup = decode(&body)?;
+    let backup = decode_version(&body, header[4])?;
     // "Mine" must mean signed by this very key.
     for e in backup.cards.iter().filter(|e| e.mine) {
         let card = pips_format::decode(&e.payload).map_err(|_| Error::Invalid("a card does not decode"))?;
@@ -293,7 +303,7 @@ pub fn owner(bytes: &[u8]) -> Result<[u8; 32], Error> {
         return Err(Error::NotABackup);
     }
     match bytes[4] {
-        VERSION => {}
+        1..=VERSION => {}
         v if v > VERSION => return Err(Error::NewerVersion(v)),
         _ => return Err(Error::NotABackup),
     }
@@ -373,6 +383,11 @@ pub fn encode(b: &Backup) -> Result<Vec<u8>, Error> {
                 str8(&mut w, &c.nick)?;
             }
         }
+        let n = u8::try_from(e.tags.len()).map_err(|_| Error::Invalid("too many tags"))?;
+        w.push(n);
+        for t in &e.tags {
+            str8(&mut w, t)?;
+        }
     }
     Ok(w)
 }
@@ -437,6 +452,18 @@ fn text(b: &[u8]) -> Result<String, Error> {
 ///
 /// [`Error::Invalid`] naming the broken rule; [`Error::TooLarge`].
 pub fn decode(body: &[u8]) -> Result<Backup, Error> {
+    decode_version(body, VERSION)
+}
+
+/// [`decode`] for a body written in an earlier `version` of the format.
+///
+/// # Errors
+///
+/// As [`decode`]; [`Error::NewerVersion`] for a version this crate does not know.
+pub fn decode_version(body: &[u8], version: u8) -> Result<Backup, Error> {
+    if version > VERSION {
+        return Err(Error::NewerVersion(version));
+    }
     let mut r = Reader(body);
     let created_ms = r.u64()?;
     let nick = r.str8()?;
@@ -461,7 +488,7 @@ pub fn decode(body: &[u8]) -> Result<Backup, Error> {
     }
     let mut cards = Vec::with_capacity(count);
     for _ in 0..count {
-        cards.push(entry(&mut r)?);
+        cards.push(entry(&mut r, version)?);
     }
     if !r.0.is_empty() {
         return Err(Error::Invalid("data after the last card"));
@@ -469,7 +496,7 @@ pub fn decode(body: &[u8]) -> Result<Backup, Error> {
     Ok(Backup { created_ms, profile, cards })
 }
 
-fn entry(r: &mut Reader<'_>) -> Result<Entry, Error> {
+fn entry(r: &mut Reader<'_>, version: u8) -> Result<Entry, Error> {
     let payload = r.bytes16()?.to_vec();
     let card = pips_format::decode(&payload).map_err(|_| Error::Invalid("a card does not decode"))?;
     let author = match pips_sign::verify_card(&card) {
@@ -527,7 +554,42 @@ fn entry(r: &mut Reader<'_>) -> Result<Entry, Error> {
     } else {
         None
     };
-    Ok(Entry { payload, mine, place, received_ms, binned_ms, certificate, sender, note: text(note)?, issued })
+    let tags = if version >= 2 { tags(r)? } else { Vec::new() };
+    Ok(Entry { payload, mine, place, received_ms, binned_ms, certificate, sender, note: text(note)?, issued, tags })
+}
+
+fn tags(r: &mut Reader<'_>) -> Result<Vec<String>, Error> {
+    let n = usize::from(r.u8()?);
+    if n > MAX_TAGS {
+        return Err(Error::Invalid("too many tags"));
+    }
+    let mut out: Vec<String> = Vec::with_capacity(n);
+    for _ in 0..n {
+        let t = r.str8()?;
+        check_tag(&t)?;
+        if out.contains(&t) {
+            return Err(Error::Invalid("a tag twice"));
+        }
+        out.push(t);
+    }
+    Ok(out)
+}
+
+/// A tag is one word as the app writes it: 1..=[`MAX_TAG`] bytes, no
+/// spaces, control characters or `#`, and no capital letters, so `#Cats`
+/// and `#cats` can never be two tags.
+///
+/// # Errors
+///
+/// [`Error::Invalid`] naming the broken rule.
+pub fn check_tag(t: &str) -> Result<(), Error> {
+    if t.is_empty() || t.len() > MAX_TAG {
+        return Err(Error::Invalid("a tag is empty or too long"));
+    }
+    if t.chars().any(|c| c.is_whitespace() || c.is_control() || c == '#' || c.is_uppercase()) {
+        return Err(Error::Invalid("a tag is not one lower-case word"));
+    }
+    Ok(())
 }
 
 fn issue_log(r: &mut Reader<'_>) -> Result<IssueLog, Error> {

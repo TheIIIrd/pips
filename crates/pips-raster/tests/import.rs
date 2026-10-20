@@ -223,3 +223,67 @@ fn nearest_maps_every_colour_even_past_the_count_cap() {
         assert_eq!(k, want, "pixel {x},{y}");
     }
 }
+
+/// Mean redmean distance between the source pixels and the picture's.
+fn error(file: &[u8], p: &pips_raster::Picture) -> f64 {
+    let src = decode(file).unwrap();
+    let pal = p.palette.resolve().unwrap();
+    let total: f64 = src.frames[0]
+        .pixels
+        .iter()
+        .zip(&p.pixels)
+        .map(|(s, &i)| {
+            let c = pal.colors()[usize::from(i)];
+            let rm = (i32::from(s[0]) + i32::from(c.r)) / 2;
+            let (dr, dg, db) =
+                (i32::from(s[0]) - i32::from(c.r), i32::from(s[1]) - i32::from(c.g), i32::from(s[2]) - i32::from(c.b));
+            f64::from((((512 + rm) * dr * dr) >> 8) + 4 * dg * dg + (((767 - rm) * db * db) >> 8)).sqrt()
+        })
+        .sum();
+    total / f64::from(u32::try_from(p.pixels.len()).unwrap())
+}
+
+#[test]
+fn fitting_keeps_a_many_coloured_picture_closer_than_any_fixed_palette() {
+    let channel = |v: u32| u8::try_from(v).unwrap();
+    let file = art(64, 8, 1, |x, y| [channel(x * 4), channel(y * 30), 128, 255]); // 512 colours
+    let fit = Options { target: Target::Reduce(32), ..Options::default() };
+    let (p, report) = import(&file, &fit).unwrap();
+    let PaletteRef::Inline(pal) = p.palette else { panic!("expected own colours") };
+    assert!(pal.len() <= 32 && p.opaque);
+    assert!(report.changed_pixels > 0);
+    // Deterministic: the same file fits the same palette.
+    assert_eq!(import(&file, &fit).unwrap().0, p);
+    let fitted = error(&file, &p);
+    for b in pips_palette::BUILTINS {
+        let fixed = Options { target: Target::Nearest(PaletteRef::Builtin(b.id)), ..Options::default() };
+        let other = error(&file, &import(&file, &fixed).unwrap().0);
+        assert!(fitted < other, "fitted {fitted:.1} vs {} {other:.1}", b.slug);
+    }
+}
+
+#[test]
+fn fitting_a_picture_that_already_fits_changes_nothing() {
+    let file = art(10, 8, 6, |x, y| if (x + y) % 3 == 0 { CLEAR } else { rgba(pico(((x * y) % 5 + 1) as usize)) });
+    let fit = Options { target: Target::Reduce(32), ..Options::default() };
+    assert_eq!(import(&file, &fit).unwrap(), import(&file, &Options::default()).unwrap());
+}
+
+#[test]
+fn fitting_keeps_small_accents_and_transparency() {
+    // Mostly a soft grey ramp, one red dot, and a transparent corner.
+    let file = art(32, 32, 1, |x, y| match (x, y) {
+        (0..=3, 0..=3) => CLEAR,
+        (20, 20) => [230, 20, 40, 255],
+        _ => {
+            let v = u8::try_from(60 + x * 3 + y).unwrap();
+            [v, v, v.saturating_add(4), 255]
+        }
+    });
+    let (p, _) = import(&file, &Options { target: Target::Reduce(16), ..Options::default() }).unwrap();
+    let pal = p.palette.resolve().unwrap();
+    assert!(!p.opaque && p.pixels[0] == 0, "transparent stays transparent");
+    assert!(pal.len() <= 16 && p.pixels.iter().skip(4).filter(|&&i| i == 0).count() == 12);
+    let red = pal.colors()[usize::from(p.pixels[20 * 32 + 20])];
+    assert!(red.r > 200 && red.g < 60, "the accent keeps its own colour: {red:?}");
+}

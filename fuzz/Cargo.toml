@@ -1,0 +1,76 @@
+# Fuzz targets for every parser of outside input (cargo-fuzz, libFuzzer).
+#   cargo +nightly fuzz run card -- -max_total_time=60
+# Kept out of the main workspace: it needs nightly and libFuzzer.
+[package]
+name = "pips-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+pips-base45 = { path = "../crates/pips-base45" }
+pips-format = { path = "../crates/pips-format" }
+pips-palette = { path = "../crates/pips-palette" }
+pips-qr = { path = "../crates/pips-qr" }
+pips-raster = { path = "../crates/pips-raster" }
+pips-sign = { path = "../crates/pips-sign" }
+pips-store = { path = "../crates/pips-store" }
+
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "card"
+path = "fuzz_targets/card.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "envelope"
+path = "fuzz_targets/envelope.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "base45"
+path = "fuzz_targets/base45.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "palette"
+path = "fuzz_targets/palette.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "raster"
+path = "fuzz_targets/raster.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "backup"
+path = "fuzz_targets/backup.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "carousel"
+path = "fuzz_targets/carousel.rs"
+test = false
+doc = false
+bench = false

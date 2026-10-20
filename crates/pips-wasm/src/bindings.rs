@@ -67,7 +67,7 @@ pub fn inspect_card(payload: &[u8]) -> Js<JsValue> {
 
 /// Turns a PNG or Aseprite file into `{ card, sourceWidth, sourceHeight,
 /// sourceFrames, scale, colors, changedPixels }`. `options` may be omitted:
-/// `{ keepScale, firstFrameOnly, palette }`.
+/// `{ keepScale, firstFrameOnly, palette, fit }`.
 #[wasm_bindgen(js_name = importPicture)]
 pub fn import_picture(bytes: &[u8], options: JsValue) -> Js<JsValue> {
     let o = if options.is_undefined() || options.is_null() {

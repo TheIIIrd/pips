@@ -19,6 +19,8 @@ only reports what the conversion would do. FILE '-' is standard input.
   -p, --palette SLUG  map every colour to the nearest in this built-in
                       palette (see pips-palette list); default: an exact
                       built-in match, or the picture's own colours
+  -f, --fit N         fit the picture's own palette of at most N colours
+                      (2..32) when it has more
   -1, --first-frame   keep only the first frame of an animation
       --keep-scale    do not undo integer upscaling
   -t, --title TEXT    card title
@@ -57,6 +59,13 @@ fn main() -> ExitCode {
                     Ok(())
                 }
                 None => Err(format!("unknown palette {s}")),
+            }),
+            "-f" | "--fit" => value(&a).and_then(|s| match s.parse::<u8>() {
+                Ok(n @ 2..=32) => {
+                    opts.target = Target::Reduce(n);
+                    Ok(())
+                }
+                _ => Err(format!("--fit takes 2 to 32, not {s}")),
             }),
             "-t" | "--title" => value(&a).map(|s| title = s),
             "-o" | "--output" => value(&a).map(|s| output = Some(s)),
