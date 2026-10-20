@@ -1,0 +1,28 @@
+[package]
+name = "pips-format"
+version = "0.1.0"
+description = "The Pips card format: strict, bounded encoder and decoder, canonical form and digest"
+keywords = ["pixel-art", "qr", "codec", "no_std"]
+categories = ["encoding", "parser-implementations", "no-std"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "pips-card"
+path = "src/bin/pips-card.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+cli = []
+
+[dependencies]
+pips-palette = { path = "../pips-palette", default-features = false }
+# Pure Rust, no_std + alloc. Used through its streaming API so that the
+# amount inflated is bounded by the caller, not by the input.
+miniz_oxide = { version = "0.9", default-features = false, features = ["with-alloc"] }
+sha2 = { version = "0.10", default-features = false }
+
+[lints]
+workspace = true

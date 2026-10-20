@@ -1,0 +1,30 @@
+[package]
+name = "pips-store"
+version = "0.1.0"
+description = "Pips collection backups: a strict binary format, encrypted to the owner's key"
+keywords = ["backup", "pixel-art", "no_std"]
+categories = ["encoding", "cryptography", "no-std"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "pips-backup"
+path = "src/bin/pips-backup.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+cli = []
+
+[dependencies]
+pips-format = { path = "../pips-format", default-features = false }
+pips-sign = { path = "../pips-sign", default-features = false }
+# XChaCha20-Poly1305: a 24-byte nonce is safe to pick at random, so no
+# counter has to survive between devices. RustCrypto, no_std, audited.
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+sha2 = { version = "0.10", default-features = false }
+zeroize = { version = "1", default-features = false }
+
+[lints]
+workspace = true

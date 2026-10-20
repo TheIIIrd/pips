@@ -1,0 +1,21 @@
+[package]
+name = "pips-palette"
+version = "0.1.0"
+description = "Pixel-art palettes: built-in set with stable ids, strict .hex and .gpl import, export"
+keywords = ["palette", "pixel-art", "gpl", "lospec", "no_std"]
+categories = ["graphics", "parser-implementations", "no-std"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "pips-palette"
+path = "src/bin/pips-palette.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+cli = []
+
+[lints]
+workspace = true

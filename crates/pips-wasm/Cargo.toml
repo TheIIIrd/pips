@@ -1,0 +1,27 @@
+[package]
+name = "pips-wasm"
+version = "0.1.0"
+description = "The Pips core for the web app: one facade over format, palettes, signatures and QR, with wasm-bindgen bindings"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pips-base45 = { path = "../pips-base45", default-features = false }
+pips-palette = { path = "../pips-palette", default-features = false }
+pips-format = { path = "../pips-format", default-features = false }
+pips-sign = { path = "../pips-sign", default-features = false }
+pips-store = { path = "../pips-store", default-features = false }
+pips-raster = { path = "../pips-raster", default-features = false }
+pips-qr = { path = "../pips-qr", default-features = false, features = ["matrix"] }
+serde = { version = "1", features = ["derive"] }
+serde_bytes = "0.11"
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6"
+
+[lints]
+workspace = true

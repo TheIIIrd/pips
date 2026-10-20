@@ -1,0 +1,30 @@
+[workspace]
+# "3": dependency versions are chosen to fit rust-version below, so a
+# `cargo update` cannot quietly raise the minimum Rust.
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2021"
+# Edition 2024 in our dependencies (zeroize) sets the floor; checked in CI.
+rust-version = "1.85"
+license = "Apache-2.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Dependencies (curve25519, sha2, deflate) are optimised even in debug
+# builds: tests run thousands of signature checks. Our own code stays
+# unoptimised so it debugs well.
+[profile.dev.package."*"]
+opt-level = 2

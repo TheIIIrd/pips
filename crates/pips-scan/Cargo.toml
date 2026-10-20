@@ -1,0 +1,24 @@
+[package]
+name = "pips-scan"
+version = "0.1.0"
+description = "QR reading for the Pips web app in browsers without BarcodeDetector: a separate, lazily loaded WebAssembly module"
+keywords = ["qr", "wasm"]
+categories = ["wasm"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+# Separate from pips-wasm on purpose: the QR decoder's Reed-Solomon tables
+# weigh ~200 KB, and browsers with BarcodeDetector never need them. The app
+# loads this module only on the first scan where the browser cannot read
+# QR codes itself.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pips-qr = { path = "../pips-qr", default-features = false, features = ["scan"] }
+wasm-bindgen = "0.2"
+
+[lints]
+workspace = true
