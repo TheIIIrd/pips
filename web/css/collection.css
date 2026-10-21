@@ -8,6 +8,8 @@
 .collection-bar > * { pointer-events: auto; }
 .collection-bar .sub { display: flex; gap: 8px; align-items: center; min-height: 18px; white-space: nowrap; overflow: hidden; }
 .pill { border: 0; border-radius: 99px; padding: 8px 14px; font-size: 14px; font-weight: 500; background: var(--raise2); color: var(--text); flex: none; }
+.level-switch { border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; }
+.level-switch:disabled { cursor: default; }
 .filter-chip { border: 0; border-radius: 99px; padding: 1px 9px; font-size: 12px; font-weight: 500; background: #6d8fd62e; color: var(--cobalt-hi);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .safe-probe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }

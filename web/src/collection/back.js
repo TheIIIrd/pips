@@ -8,7 +8,7 @@
 
 import { h, icon, fitBytes } from '../dom.js';
 import { t, date } from '../i18n.js';
-import { app, setNote, setTags, NOTE_BYTES } from '../state.js';
+import { app, setNote, setTags, daysLeft, NOTE_BYTES } from '../state.js';
 import { toast, ask } from '../ui/shell.js';
 import { normalTag, MAX_TAGS } from './query.js';
 
@@ -22,7 +22,7 @@ const shake = (el) => {
 
 /**
  * @param {import('../state.js').Entry} entry
- * @param {{editing: boolean, onEdit: (on: boolean) => void, onTag: (tag: string) => void}} o
+ * @param {{editing: boolean, onEdit: (on: boolean) => void, onTag: (tag: string) => void, onAuthor: (nick: string) => void}} o
  */
 export function cardBack(entry, o) {
   const { card, rec, author } = entry;
@@ -49,6 +49,12 @@ export function cardBack(entry, o) {
   fact(t('back.k.sign'), author ? `✓ ${t('back.sign.ok')} · ${author.short}` : t('back.sign.none'), author ? 'ok' : 'bad');
   for (const l of links(card)) fact(l.k, l.v);
   fact(t('back.k.pic'), t('back.tech', card.width, card.height, rec.payload.length));
+  if (rec.state === 'trash') fact(t('back.k.bin'), t('back.bin-left', daysLeft(rec)), 'bad');
+  // More by the same artist (by key, not by name): a tap shows them all.
+  const others = author && !rec.mine ? [...app.cards.values()].filter((e) => e.author?.hex === author.hex && e.rec.digest !== rec.digest).length : 0;
+  if (others && card.author) {
+    facts.append(h('dt'), h('dd', {}, h('button', { type: 'button', class: 'mini-btn', onclick: () => o.onAuthor(card.author) }, t('back.more', others))));
+  }
 
   // Tags: filters outside editing, removable inside it.
   const tags = h('div', { class: 'tags' });

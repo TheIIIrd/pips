@@ -148,6 +148,8 @@ const ru = {
   'back.note.none': 'Заметки нет',
   'back.k.path': 'Путь', 'back.k.when': 'Получена', 'back.k.sign': 'Подпись', 'back.k.copy': 'Экземпляр', 'back.k.pic': 'Картинка',
   'back.sign.ok': 'верна', 'back.sign.none': 'нет — автор не подтверждён',
+  'back.k.bin': 'Корзина', 'back.bin-left': (/** @type {number} */ n) => `удалится через ${n} ${plural(n, 'день', 'дня', 'дней')}`,
+  'back.more': (/** @type {number} */ n) => `ещё ${n} ${plural(n, 'работа', 'работы', 'работ')} автора у вас →`,
   'draw.soon': 'Редактор пикселей появится позже. Пока карточку можно сделать из PNG или Aseprite.',
   'share.title': 'Поделиться', 'share.hint': 'Пусть другой телефон отсканирует код. Смахните вверх, чтобы убрать.',
 };
@@ -298,6 +300,8 @@ const en = {
   'back.note.none': 'No note',
   'back.k.path': 'Path', 'back.k.when': 'Received', 'back.k.sign': 'Signature', 'back.k.copy': 'Copy', 'back.k.pic': 'Picture',
   'back.sign.ok': 'valid', 'back.sign.none': 'none — artist not confirmed',
+  'back.k.bin': 'Bin', 'back.bin-left': (/** @type {number} */ n) => `deleted in ${n} day${n === 1 ? '' : 's'}`,
+  'back.more': (/** @type {number} */ n) => `${n} more by this artist →`,
   'draw.soon': 'The pixel editor comes later. For now a card can be made from a PNG or Aseprite file.',
   'share.title': 'Share', 'share.hint': 'Let the other phone scan the code. Swipe up to put it away.',
 };

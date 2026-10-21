@@ -59,7 +59,9 @@ export function collectionView(o) {
   const binBtn = iconButton({ icon: 'trash', label: t('archive.trash'), onClick: () => setPlace('trash') });
   const selBtn = h('button', { type: 'button', class: 'pill', onclick: () => (selecting ? stopSelect() : startSelect()) });
   const title = h('h1');
-  const sub = h('span');
+  // The level's name doubles as a switch between weeks and months, so
+  // the months are a tap away too, not only a pinch.
+  const sub = /** @type {HTMLButtonElement} */ (h('button', { type: 'button', class: 'level-switch', onclick: () => { if (!selecting && stage.level <= 1) stage.setLevel(stage.level === 0 ? 1 : 0); } }));
   const chip = h('button', { type: 'button', class: 'filter-chip', onclick: () => clearFilter() });
   const bar = h('header', { class: 'bar collection-bar' }, backBtn.el,
     h('div', { class: 'title' }, title, h('div', { class: 'sub' }, sub, chip)), archBtn.el, binBtn.el, selBtn);
@@ -448,7 +450,10 @@ export function collectionView(o) {
     const firstRun = filter.place === 'collection' && !inPlace('collection').length;
     title.textContent = selecting ? t('collection.select-title') : t(PLACE_TITLE[filter.place]);
     const levelName = lv >= 3 ? 'collection.card' : lv === 2 ? 'collection.feed' : filter.by === 'author' ? 'collection.by-authors' : lv === 0 ? 'collection.by-months' : 'collection.by-weeks';
-    sub.textContent = selecting ? t('collection.selected', selected.size) : `${t(levelName)}${filter.place === 'trash' && lv <= 1 ? ` · ${t('collection.bin-note')}` : ''}`;
+    const n = stage.list.length;
+    sub.textContent = selecting ? t('collection.selected', selected.size)
+      : lv <= 1 ? `${t(levelName)} · ${filter.place === 'trash' ? t('collection.bin-note') : t('collection.count', n)}` : t(levelName);
+    sub.disabled = selecting || lv > 1;
     const showChip = filtered && lv >= 1 && !selecting && !firstRun;
     chip.hidden = !showChip;
     sub.hidden = showChip;
@@ -493,7 +498,11 @@ export function collectionView(o) {
   /** @param {string} id */
   function build(id) {
     const e = /** @type {import('../state.js').Entry} */ (app.cards.get(id));
-    const back = cardBack(e, { editing, onEdit: setEditing, onTag: (tag) => { setQuery(`#${tag}`); stage.setLevel(0); } }).el;
+    const back = cardBack(e, {
+      editing, onEdit: setEditing,
+      onTag: (tag) => { setQuery(`#${tag}`); stage.setLevel(0); },
+      onAuthor: (nick) => { setQuery(nick); stage.setLevel(0); },
+    }).el;
     const s = FRAME_SHADES[e.card.frame] ?? FRAME_SHADES[0];
     back.style.setProperty('--shade', s.paper);
     back.style.setProperty('--shade-ink', s.ink);
