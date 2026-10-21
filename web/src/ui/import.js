@@ -2,6 +2,10 @@
 // A new card from a PNG or Aseprite file: pick, see what the conversion
 // did, adjust, name, sign. The file never leaves the device.
 //
+// A tab like the others: leaving it keeps what is under way (the file, the
+// options, the title), so a person can look something up and come back.
+// Only signing or the reset button start it over.
+//
 // The core does the work (pips-raster); this screen only shows its report
 // and passes the options back. Each change re-runs the import from the
 // original bytes, so options never compound.
@@ -11,10 +15,11 @@ import { t } from '../i18n.js';
 import { app, addOwn } from '../state.js';
 import { frame, FRAME_SHADES } from './card.js';
 import { go, toast } from './shell.js';
+import { iconButton } from '../kit/icon-button.js';
 
 const ACCEPT = '.png,.aseprite,.ase,image/png';
 
-export function openImport() {
+export function importView() {
   /** @type {Uint8Array|null} */
   let bytes = null;
   let fileName = '';
@@ -68,20 +73,30 @@ export function openImport() {
     h('div', { class: 'row-btns import-actions' }, save, pickBtn),
     extras);
 
-  const close = () => {
+  /** Back to an empty frame: after signing, or when the person asks. */
+  const reset = () => {
     clearInterval(timer);
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-    overlay.remove();
+    bytes = null;
+    fileName = autoTitle = '';
+    sourceUrl = null;
+    showOriginal = autoFit = false;
+    Object.assign(opts, { keepScale: false, firstFrameOnly: false, palette: undefined, fit: undefined });
+    palette.value = '';
+    shade = 0;
+    result = error = null;
+    title.value = '';
+    paint();
   };
-  const overlay = h('section', { class: 'overlay', role: 'dialog', 'aria-modal': 'true' },
-    h('div', { class: 'bar' },
-      h('button', { class: 'icon-btn', 'aria-label': t('ask.cancel'), onclick: close }, icon('close')),
-      h('div', { class: 'title' }, h('h1', {}, t('import.title')))),
+  const resetBtn = iconButton({ icon: 'close', label: t('import.reset'), onClick: reset });
+  const el = h('section', { class: 'view import-view' },
+    h('div', { class: 'bar' }, h('div', { class: 'title' }, h('h1', {}, t('import.title'))), resetBtn.el),
     body, input);
 
   title.addEventListener('input', () => {
     const cap = preview.querySelector('.cap b');
     if (cap) cap.textContent = title.value || t('import.name.ph');
+    resetBtn.el.hidden = !bytes && !title.value;
   });
 
   input.addEventListener('change', async () => {
@@ -137,6 +152,7 @@ export function openImport() {
 
   function paint() {
     clearInterval(timer);
+    resetBtn.el.hidden = !bytes && !title.value;
     // Preview: always a card frame of the same size.
     const card = result
       ? { ...result.card, title: title.value, frame: shade, author: app.profile.nick }
@@ -236,7 +252,7 @@ export function openImport() {
     const card = { ...result.card, title: title.value.trim(), frame: shade, author: p.nick, handle: p.handle, link: p.link };
     try {
       const r = await addOwn(app.identity.signCard(card));
-      close();
+      reset();
       go('collection', { open: r.digest });
       toast(t('import.saved'));
     } catch (e) {
@@ -244,8 +260,12 @@ export function openImport() {
     }
   }
 
-  document.body.append(overlay);
   paint();
+  return {
+    el,
+    show: paint, // also restarts an animated preview
+    hide: () => clearInterval(timer),
+  };
 }
 
 /** A blank card, only to give the empty preview the exact frame size. */

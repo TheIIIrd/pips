@@ -34,7 +34,8 @@
 .stage-label.by-author b { font-family: var(--sans); overflow-wrap: anywhere; line-height: 1.15; }
 
 /* -------------------------------------------------------------- turn -- */
-.turn { position: absolute; z-index: 20; left: 0; top: 0; perspective: 1100px; pointer-events: none; }
+/* Above every feed card: the turning card is always the one in front. */
+.turn { position: absolute; z-index: 150; left: 0; top: 0; perspective: 1100px; pointer-events: none; }
 .turn-flip { position: absolute; inset: 0; transform-style: preserve-3d; }
 .turn-flip > .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: none; box-shadow: none; }
 .turn-flip > .front-face .frame .face { box-shadow: 0 30px 60px -30px #000, 0 2px 4px #0006; }
