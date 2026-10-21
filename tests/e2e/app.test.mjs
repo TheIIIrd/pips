@@ -72,6 +72,23 @@ test('import keeps its layout and reports what it did', async () => {
   await p.context().close();
 });
 
+test('an import under way survives a look at another tab', async () => {
+  const p = await env.phone('pixelfox');
+  await tab(p, 'import');
+  await choose(p, () => p.click('.import-preview'), await heart(env.dir));
+  await p.locator('.import-body input:not([type])').fill('Сердце');
+  await tab(p, 'receive');
+  await tab(p, 'collection');
+  await tab(p, 'import');
+  assert.equal(await p.inputValue('.import-body input:not([type])'), 'Сердце', 'the title is kept');
+  assert.ok(await p.locator('.import-actions .btn.key').isEnabled(), 'the picture is kept');
+  await p.click('.import-view .bar .ib');
+  assert.equal(await p.inputValue('.import-body input:not([type])'), '', 'start over clears it');
+  assert.ok(await p.locator('.import-actions .btn.key').isDisabled());
+  assert.equal(await cards(p), 0, 'nothing was signed on the way');
+  await p.context().close();
+});
+
 test('a card goes from one phone to another and is checked on arrival', async () => {
   const a = await env.phone('pixelfox');
   const b = await env.phone('mossfern');
@@ -190,6 +207,16 @@ test('the collection: tags, search, archive and the bin, all without gestures', 
   await act(p, 'turn');
   await p.waitForTimeout(800);
   assert.equal(await sub(), 'карточка');
+  // A press on the card's left half turns it the other way.
+  const flip = async () => Math.round(Number(/rotateY\((-?[\d.]+)deg/.exec(await p.$eval('.turn-flip', (e) => e.style.transform))?.[1]) / 180) * 180;
+  const before = await flip();
+  const card = await p.locator('.turn').boundingBox();
+  await p.mouse.click(card.x + card.width * 0.2, card.y + card.height * 0.9);
+  await p.waitForTimeout(900);
+  assert.equal(await flip(), before - 180, 'left half: the other way');
+  await p.mouse.click(card.x + card.width * 0.8, card.y + card.height * 0.9);
+  await p.waitForTimeout(900);
+  assert.equal(await flip(), before, 'right half: back again');
   assert.ok(await p.$eval('.turn textarea', (t) => t.readOnly), 'nothing to type before the pencil');
   await p.click('.turn .pen');
   await p.click('.turn .tag.add');

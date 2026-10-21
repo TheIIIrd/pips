@@ -21,7 +21,7 @@ export function createTurn(o) {
   o.host.append(el);
   /** @type {string|null} */
   let of = null;
-  let lastZ = 0, wantTurn = false, fit = 1;
+  let lastZ = 0, wantTurn = 0, fit = 1; // wantTurn: a turn asked for, and its direction
   loop.add((dt) => {
     const a = rotY.step(dt), b = rotX.step(dt);
     return a || b;
@@ -45,7 +45,7 @@ export function createTurn(o) {
     draw(z, c, build, interactive) {
       lastZ = z;
       // A turn asked for on the way to the card happens once there.
-      if (wantTurn && z > 2.95) { wantTurn = false; rotY.to = Math.round(rotY.v / 180) * 180 + 180; loop.kick(); }
+      if (wantTurn && z > 2.95) { rotY.to = Math.round(rotY.v / 180) * 180 + 180 * wantTurn; wantTurn = 0; loop.kick(); }
       if (!wantTurn && z < 2.95 && Math.round(rotY.to) % 360 !== 0) { rotY.to = frontOf(rotY.v); rotX.to = 0; loop.kick(); }
       const on = !!(c && c.rr && (z > 2.6 || (z > 1.6 && turned())));
       el.hidden = !on;
@@ -80,12 +80,15 @@ export function createTurn(o) {
     },
     /** Rebuilds the faces next time (the card changed). */
     invalidate() { of = null; fit = 1; },
-    /** Turns over, or to a given side. @param {boolean} [toBack] */
-    flipOver(toBack) {
+    /**
+     * Turns over, or to a given side. `dir` 1 sends the right edge away,
+     * -1 the left one. @param {boolean} [toBack] @param {1|-1} [dir]
+     */
+    flipOver(toBack, dir = 1) {
       const now = showsBack();
       if (toBack === now) return;
-      if (lastZ < 2.95) { wantTurn = true; loop.kick(); return; }
-      rotY.to = Math.round(rotY.v / 180) * 180 + 180;
+      if (lastZ < 2.95) { wantTurn = dir; loop.kick(); return; }
+      rotY.to = Math.round(rotY.to / 180) * 180 + 180 * dir;
       loop.kick();
     },
     /** Face up at once (another card came). */

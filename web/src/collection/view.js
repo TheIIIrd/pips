@@ -196,8 +196,8 @@ export function collectionView(o) {
   }
 
   // --------------------------------------------------------------- gestures --
-  /** @param {Item|null} c @param {number} level */
-  function tap(c, level) {
+  /** @param {Item|null} c @param {number} level @param {{x: number, y: number}} at */
+  function tap(c, level, at) {
     if (level <= 1) {
       if (!c) return;
       if (selecting) { toggle(c.id); return; }
@@ -208,7 +208,12 @@ export function collectionView(o) {
       const i = stage.list.indexOf(c);
       if (i === Math.round(stage.feed.v)) stage.setLevel(3);
       else { stage.feed.to = i; stage.kick(); }
-    } else turn.flipOver();
+    } else {
+      // Pressed on its right half, the card turns with its right edge going
+      // away; on its left half, the other way round — like a real one.
+      const r = c?.rr;
+      turn.flipOver(undefined, r && at.x < r.x + r.w / 2 ? -1 : 1);
+    }
   }
   /** @param {Item} c */
   function hold(c) {

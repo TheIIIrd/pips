@@ -9,7 +9,7 @@ import { load, hasIdentity } from './state.js';
 import { getMeta } from './store.js';
 import { mountShell, go, ask } from './ui/shell.js';
 import { collectionView } from './collection/view.js';
-import { openImport } from './ui/import.js';
+import { importView } from './ui/import.js';
 import { receiveView } from './ui/receive.js';
 import { meView } from './ui/me.js';
 import { onboarding } from './ui/onboarding.js';
@@ -33,8 +33,8 @@ async function main() {
 
   const start = () => {
     // No editor yet: say so, and offer what makes a card today.
-    const draw = () => ask(t('draw.soon'), { yes: t('tab.import') }).then((yes) => yes && openImport());
-    mountShell(root, { collection: collectionView({ draw }), receive: receiveView(), me: meView() }, { import: openImport, draw });
+    const draw = () => ask(t('draw.soon'), { yes: t('tab.import') }).then((yes) => yes && go('import'));
+    mountShell(root, { collection: collectionView({ draw }), import: importView(), receive: receiveView(), me: meView() }, { draw });
     go('collection');
   };
   if (hasIdentity()) start();

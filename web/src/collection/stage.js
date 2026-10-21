@@ -36,7 +36,7 @@ import { grid, feedRect, feedWidth, runs, groupKey } from './layout.js';
  *   by: () => 'date'|'author',
  *   label: (level: 0|1, group: {key: string, cards: Item[]}) => {title: string, sub: string},
  *   skip: string, control: string, blocked: () => boolean,
- *   tap: (item: Item|null, level: number) => void,
+ *   tap: (item: Item|null, level: number, at: {x: number, y: number}) => void,
  *   hold: (item: Item) => boolean,
  *   pull: (item: Item) => import('../kit/gestures.js').DragHandler | null,
  *   turn: () => import('../kit/gestures.js').DragHandler | null,
@@ -240,7 +240,7 @@ export function createStage(o) {
   let zh = [];
   const g = gestures(o.surface, {
     skip: o.skip, control: o.control, blocked: o.blocked,
-    tap: (p) => o.tap(cardAt(p.x, p.y), level()),
+    tap: (p) => o.tap(cardAt(p.x, p.y), level(), p),
     hold: (p) => {
       const c = level() <= 1 ? cardAt(p.x, p.y) : null;
       return c ? o.hold(c) : false;

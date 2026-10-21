@@ -116,7 +116,7 @@ textarea.words { width: 100%; min-height: 120px; resize: vertical; border: 0; bo
 .group h2 { margin: 0 0 8px; font-size: 12px; font-weight: 500; color: var(--text3); letter-spacing: .02em; }
 .error { color: var(--warn); font-size: 13px; margin: 8px 2px 0; min-height: 1em; }
 
-.toast { position: fixed; left: 14px; right: 14px; bottom: calc(var(--tabs) + var(--safe-b) + 12px); z-index: 1500;
+.toast { position: fixed; left: max(14px, calc((100% - 460px) / 2)); right: max(14px, calc((100% - 460px) / 2)); bottom: calc(var(--tabs) + var(--safe-b) + 12px); z-index: 1500;
   display: flex; align-items: center; gap: 10px; background: #2e313b; border-radius: 13px; padding: 6px 6px 6px 16px;
   min-height: 48px; font-size: 14px; box-shadow: 0 14px 30px -12px #000; transition: opacity .2s, transform .2s; }
 .toast.high { bottom: auto; top: calc(64px + var(--safe-t)); }
@@ -239,7 +239,7 @@ a.btn { text-decoration: none; }
 /* ------------------------------------------------------------ wide screens -- */
 /* Forms and lists keep a phone's comfortable width, centred; buttons stay
    the size of what they say instead of crossing the screen. */
-.view:not(.collection-view) > .scroll, .overlay > .scroll, .overlay > .import-body, .onb {
+.view:not(.collection-view) > .scroll, .view > .import-body, .overlay > .scroll, .onb {
   padding-left: max(16px, calc((100% - 560px) / 2)); padding-right: max(16px, calc((100% - 560px) / 2)); }
 .view:not(.collection-view) > .bar, .overlay > .bar {
   padding-left: max(20px, calc((100% - 560px) / 2 + 4px)); padding-right: max(10px, calc((100% - 560px) / 2 - 6px)); }
