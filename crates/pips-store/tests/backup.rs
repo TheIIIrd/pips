@@ -291,7 +291,7 @@ fn tags_follow_the_rules() {
     b.cards[1].tags = vec!["a".into(), "a".into()];
     let body = encode_body(&b).unwrap();
     assert_eq!(decode(&body), Err(Error::Invalid("a tag twice")));
-    b.cards[1].tags = (0..6).map(|i| format!("t{i}")).collect();
+    b.cards[1].tags = (0..17).map(|i| format!("t{i}")).collect();
     let body = encode_body(&b).unwrap();
     assert_eq!(decode(&body), Err(Error::Invalid("too many tags")));
 }

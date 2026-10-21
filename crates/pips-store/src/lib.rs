@@ -90,7 +90,7 @@ pub const MAX_CARDS: usize = 100_000;
 /// Longest note, in bytes.
 pub const MAX_NOTE: usize = 4000;
 /// Most tags on one card.
-pub const MAX_TAGS: usize = 5;
+pub const MAX_TAGS: usize = 16;
 /// Longest tag, in bytes.
 pub const MAX_TAG: usize = 32;
 /// Largest backup file accepted.
