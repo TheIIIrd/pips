@@ -123,6 +123,7 @@ const ru = {
   'collection.selected': (/** @type {number} */ n) => `выбрано: ${n}`,
   'collection.bin-note': 'удаляются через 30 дней', 'collection.back': 'Назад',
   'collection.coach': 'Сведите пальцы — недели, месяцы. Разведите — лента, карточка.',
+  'collection.coach.desk': 'Ctrl + колёсико — недели, месяцы, лента, карточка. Esc — назад.',
   'search.ph': 'Название, автор или #тег', 'search.clear': 'Очистить', 'search.none': 'Ничего не нашлось',
   'owner.label': 'Чьи карточки', 'owner.all': 'Все', 'owner.mine': 'Мои', 'owner.got': 'Полученные',
   'owner.chip.mine': 'мои', 'owner.chip.got': 'полученные',
@@ -147,6 +148,8 @@ const ru = {
   'back.note.none': 'Заметки нет',
   'back.k.path': 'Путь', 'back.k.when': 'Получена', 'back.k.sign': 'Подпись', 'back.k.copy': 'Экземпляр', 'back.k.pic': 'Картинка',
   'back.sign.ok': 'верна', 'back.sign.none': 'нет — автор не подтверждён',
+  'back.k.bin': 'Корзина', 'back.bin-left': (/** @type {number} */ n) => `удалится через ${n} ${plural(n, 'день', 'дня', 'дней')}`,
+  'back.more': (/** @type {number} */ n) => `ещё ${n} ${plural(n, 'работа', 'работы', 'работ')} автора у вас →`,
   'draw.soon': 'Редактор пикселей появится позже. Пока карточку можно сделать из PNG или Aseprite.',
   'share.title': 'Поделиться', 'share.hint': 'Пусть другой телефон отсканирует код. Смахните вверх, чтобы убрать.',
 };
@@ -272,6 +275,7 @@ const en = {
   'collection.selected': (/** @type {number} */ n) => `${n} selected`,
   'collection.bin-note': 'deleted after 30 days', 'collection.back': 'Back',
   'collection.coach': 'Pinch in for weeks and months. Spread out for the feed and a card.',
+  'collection.coach.desk': 'Ctrl + wheel: weeks, months, feed, card. Esc goes back.',
   'search.ph': 'Title, artist or #tag', 'search.clear': 'Clear', 'search.none': 'Nothing found',
   'owner.label': 'Whose cards', 'owner.all': 'All', 'owner.mine': 'Mine', 'owner.got': 'Received',
   'owner.chip.mine': 'mine', 'owner.chip.got': 'received',
@@ -296,6 +300,8 @@ const en = {
   'back.note.none': 'No note',
   'back.k.path': 'Path', 'back.k.when': 'Received', 'back.k.sign': 'Signature', 'back.k.copy': 'Copy', 'back.k.pic': 'Picture',
   'back.sign.ok': 'valid', 'back.sign.none': 'none — artist not confirmed',
+  'back.k.bin': 'Bin', 'back.bin-left': (/** @type {number} */ n) => `deleted in ${n} day${n === 1 ? '' : 's'}`,
+  'back.more': (/** @type {number} */ n) => `${n} more by this artist →`,
   'draw.soon': 'The pixel editor comes later. For now a card can be made from a PNG or Aseprite file.',
   'share.title': 'Share', 'share.hint': 'Let the other phone scan the code. Swipe up to put it away.',
 };

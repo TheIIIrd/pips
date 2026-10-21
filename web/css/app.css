@@ -73,7 +73,7 @@ svg.i { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-widt
 /* The tab bar: --tabs is the room kept for it at the bottom. The scanner,
    the main action, sits raised in the middle. */
 .tabs { position: absolute; left: 0; right: 0; bottom: 0; z-index: 100; display: flex; justify-content: space-around; align-items: flex-end;
-  padding: 6px 8px calc(6px + var(--safe-b)); background: linear-gradient(#1a1b2100, var(--void) 38%);
+  padding: 6px max(8px, calc((100% - 520px) / 2)) calc(6px + var(--safe-b)); background: linear-gradient(#1a1b2100, var(--void) 38%);
   transition: transform .4s cubic-bezier(.2, .9, .25, 1), opacity .3s; }
 .tabs.away { transform: translateY(110%); opacity: 0; pointer-events: none; }
 .tabs button { flex: 1; max-width: 88px; border: 0; background: none; color: #7a7f8e; display: flex; flex-direction: column; align-items: center;

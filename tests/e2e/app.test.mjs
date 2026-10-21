@@ -163,7 +163,7 @@ test('the collection: tags, search, archive and the bin, all without gestures', 
   await p.click('text=Добавить образцы карточек');
   await p.locator('.collection-view:visible').waitFor();
   await p.waitForTimeout(800);
-  const sub = () => p.textContent('.collection-bar .sub span');
+  const sub = async () => (await p.textContent('.collection-bar .level-switch')).split(' · ')[0];
   const inPlace = (st) => p.evaluate(async (x) => [...(await import('/src/state.js')).app.cards.values()].filter((e) => e.rec.state === x).length, st);
   const shown = () => p.$$eval('.on-stage', (els) => els.filter((e) => e.isConnected && Number(e.style.opacity) > 0.5).length);
   /** Clicks the first card fully on screen below the bar. */
@@ -174,6 +174,11 @@ test('the collection: tags, search, archive and the bin, all without gestures', 
   };
   assert.equal(await shown(), 22);
   assert.equal(await sub(), 'по неделям');
+  await p.click('.collection-bar .level-switch');
+  await p.waitForTimeout(900);
+  assert.equal(await sub(), 'по месяцам', 'the months are a tap away');
+  await p.click('.collection-bar .level-switch');
+  await p.waitForTimeout(900);
 
   // A card opens: feed, then the card itself; a tag goes on its back.
   await clickCard();
@@ -236,7 +241,7 @@ test('the collection: tags, search, archive and the bin, all without gestures', 
   await p.waitForTimeout(900);
   await p.click('.collection-bar .ib[aria-label="Корзина"]');
   await p.waitForTimeout(900);
-  assert.match(await sub(), /удаляются через 30 дней/);
+  assert.match(await p.textContent('.collection-bar .level-switch'), /удаляются через 30 дней/);
   await p.click('.collection-bar .pill');
   await clickCard();
   await p.click('.action-bar.up [data-act="purge"]');

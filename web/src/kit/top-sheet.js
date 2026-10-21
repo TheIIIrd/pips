@@ -16,7 +16,7 @@ export function topSheet(o) {
   function follow(f, anim = false) {
     el.classList.toggle('anim', anim);
     scrim.classList.toggle('anim', anim);
-    el.style.transform = `translateY(${-(1 - f) * 101}%)`;
+    el.style.transform = `translateY(calc(${-(1 - f) * 101}% - ${(1 - f) * 56}px))`; // shadow included
     scrim.style.opacity = String(f * 0.45);
   }
   function show() {

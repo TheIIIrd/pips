@@ -21,7 +21,7 @@ export function createTurn(o) {
   o.host.append(el);
   /** @type {string|null} */
   let of = null;
-  let lastZ = 0, wantTurn = false;
+  let lastZ = 0, wantTurn = false, fit = 1;
   loop.add((dt) => {
     const a = rotY.step(dt), b = rotX.step(dt);
     return a || b;
@@ -57,6 +57,7 @@ export function createTurn(o) {
       if (of !== c.id) {
         of = c.id;
         const f = build(c.id);
+        fit = 1;
         front.replaceChildren(f.front);
         back.replaceChildren(f.back);
       }
@@ -64,7 +65,11 @@ export function createTurn(o) {
       Object.assign(el.style, { width: `${w}px`, height: `${hh}px`, transform: `translate3d(${x}px,${y}px,0)` });
       const fr = /** @type {HTMLElement|null} */ (front.firstElementChild);
       if (fr) { fr.style.width = `${w}px`; fr.style.setProperty('--cap', String(cap)); }
-      back.style.fontSize = `${Math.max(10, w * 0.037)}px`;
+      // The back has no scrolling: if a long back does not fit, its type
+      // gets a little smaller until it does.
+      back.style.fontSize = `${Math.max(9, w * 0.037 * fit)}px`;
+      const inner = /** @type {HTMLElement|null} */ (back.firstElementChild);
+      if (inner && fit > 0.8 && inner.scrollHeight > inner.clientHeight + 1) { fit -= 0.04; loop.kick(); }
       flip.style.transform = `rotateX(${rotX.v}deg) rotateY(${rotY.v}deg)`;
       // Each face is hidden outright when turned away: backface-visibility
       // alone shows a mirrored front on some engines (Firefox).
@@ -74,7 +79,7 @@ export function createTurn(o) {
       back.classList.toggle('live', b && z > 2.9 && interactive);
     },
     /** Rebuilds the faces next time (the card changed). */
-    invalidate() { of = null; },
+    invalidate() { of = null; fit = 1; },
     /** Turns over, or to a given side. @param {boolean} [toBack] */
     flipOver(toBack) {
       const now = showsBack();
