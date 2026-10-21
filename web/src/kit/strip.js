@@ -21,7 +21,8 @@ export function strip() {
   /** 0 hidden … 1 up. @param {number} f @param {boolean} [anim] */
   function reveal(f, anim = false) {
     el.classList.toggle('anim', anim);
-    el.style.transform = `translateY(${(1 - f) * 101}%)`;
+    // Past its own height by its shadow's reach too: hidden means unseen.
+    el.style.transform = `translateY(calc(${(1 - f) * 101}% + ${(1 - f) * 48}px))`;
   }
 
   /**
@@ -62,8 +63,11 @@ export function strip() {
 
   /** Where slot `k` is on screen once the strip is fully up. @param {number} k */
   function slot(k) {
+    // Measured against the strip's own container, not the window: on a
+    // phone the two differ by the browser's bars.
     const r = row.getBoundingClientRect();
-    const shift = el.getBoundingClientRect().top - (innerHeight - el.offsetHeight);
+    const bottom = /** @type {HTMLElement|null} */ (el.offsetParent)?.getBoundingClientRect().bottom ?? innerHeight;
+    const shift = el.getBoundingClientRect().top - (bottom - el.offsetHeight);
     return { x: r.left + k * SLOT, y: r.top - shift, w: 56 };
   }
 

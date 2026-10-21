@@ -79,7 +79,8 @@ export function collectionView(o) {
   const fly = h('div', { class: 'fly-layer' });
   const placeEmpty = h('p', { class: 'place-empty' });
   const first = firstRun();
-  const coach = h('div', { class: 'coach', hidden: true }, t('collection.coach'));
+  const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  const coach = h('div', { class: 'coach', hidden: true }, t(coarse ? 'collection.coach' : 'collection.coach.desk'));
   const strip = makeStrip();
   /** @type {null | (() => void)} */
   let stopShare = null;
@@ -121,6 +122,15 @@ export function collectionView(o) {
     drawn, levelChanged,
   });
   const turn = createTurn({ host });
+
+  // The strip is up while a card is pulled down, while cards fly to it and
+  // a moment after; every frame checks that, so it can never stay behind.
+  let stripUp = false, stripHold = 0, pulling = false;
+  /** @param {number} f @param {boolean} [anim] */
+  function showStrip(f, anim = false) {
+    stripUp = f > 0;
+    strip.reveal(f, anim);
+  }
 
   // ------------------------------------------------------------- the cards --
   /** What the query functions need of an entry. @param {import('../state.js').Entry} e */
@@ -174,6 +184,7 @@ export function collectionView(o) {
     stopSelect();
     if (stage.Z.to > 1) stage.setLevel(1);
     for (const s of stage.scroll) s.set(0);
+    showStrip(0);
     refilter(() => { filter.place = p; });
   }
   function back() {
@@ -209,28 +220,30 @@ export function collectionView(o) {
     const H = el.clientHeight, canShare = filter.place !== 'trash';
     return {
       move(p) {
+        pulling = true;
         const dy = p.dy;
         stage.dragY.set(dy < 0 ? (canShare ? dy * 0.6 : dy * 0.25) : dy);
         if (dy < 0 && canShare) {
           prepareShare(c);
           // The code waits until the card is lifted well up, then follows the finger.
           sheet.follow(clamp((-dy - 90) / (H * 0.2), 0, 1));
-          strip.reveal(0);
+          showStrip(0);
         } else {
           drawStrip();
-          strip.reveal(clamp(dy / (H * 0.26), 0, 1));
+          showStrip(clamp(dy / (H * 0.26), 0, 1));
           sheet.follow(0);
         }
         stage.kick();
       },
       end(_p, v) {
+        pulling = false;
         const d = stage.dragY.v;
         if (canShare && (d < -150 || (v.y < -900 && d < -70))) { stage.dragY.to = 0; openShare(c); }
         else if (d > H * 0.2 || v.y > 900) send([c], true);
         else {
           stage.dragY.to = 0;
           if (!sheet.open) { sheet.follow(0, true); dropShare(); }
-          strip.reveal(0, true);
+          showStrip(0, true);
         }
         stage.kick();
       },
@@ -276,7 +289,8 @@ export function collectionView(o) {
     sheet.follow(0, true);
     dropShare();
     drawStrip();
-    strip.reveal(1, true);
+    showStrip(1, true);
+    stripHold = Infinity;
     const now = performance.now(), start = now + (pulled ? 0 : 160);
     const dur = 620, gap = list.length <= 6 ? 190 : Math.max(60, 1100 / list.length);
     list.forEach((c, k) => {
@@ -320,7 +334,8 @@ export function collectionView(o) {
       sync();
       const ids = list.map((c) => c.id);
       toast(t(`moved.${to}`, ids.length), { label: t('toast.undo'), run: () => relocate(ids, from) });
-      setTimeout(() => { if (!stage.busy) strip.reveal(0, true); }, 1300);
+      stripHold = performance.now() + 1300;
+      setTimeout(() => stage.kick(), 1350); // the frame loop sleeps when nothing moves
     }, start - now + (list.length - 1) * gap + dur + 40);
   }
 
@@ -402,7 +417,10 @@ export function collectionView(o) {
   /** Things that follow the zoom every frame: cheap writes only. @param {number} z */
   function drawn(z) {
     const c = stage.current();
-    turn.draw(z, c, build, !stage.busy && !lock);
+    // A finger on the back's pencil is a touch too: only a pinch or a
+    // flight makes the back stop taking presses.
+    turn.draw(z, c, build, !stage.pinching && !lock);
+    if (stripUp && !pulling && !lock && performance.now() > stripHold) showStrip(0, true);
     const sv = Math.max(0, 1 - z * 2.2);
     searchPanel.style.opacity = String(sv);
     searchPanel.style.visibility = sv < 0.02 ? 'hidden' : '';

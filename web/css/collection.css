@@ -1,8 +1,9 @@
 /* The collection screen (src/collection/). Everything here is positioned by
    script each frame; the styles only say what things look like. */
 
-.collection-view { inset: 0; touch-action: none; -webkit-user-select: none; user-select: none; overflow: hidden; }
-.collection-bar { position: absolute; z-index: 50; left: 0; right: 0; top: 0; gap: 8px; padding-right: 16px;
+.view.collection-view { inset: 0; touch-action: none; -webkit-user-select: none; user-select: none; overflow: hidden; }
+.bar.collection-bar { position: absolute; z-index: 50; left: 0; right: 0; top: 0; gap: 8px;
+  padding-left: max(20px, calc((100% - 1100px) / 2 + 16px)); padding-right: max(16px, calc((100% - 1100px) / 2 + 16px));
   background: linear-gradient(var(--void) 72%, #1a1b2100); pointer-events: none; }
 .collection-bar > * { pointer-events: auto; }
 .collection-bar .sub { display: flex; gap: 8px; align-items: center; min-height: 18px; white-space: nowrap; overflow: hidden; }
@@ -43,17 +44,21 @@
    the card (the twin sets the font size from its width). */
 .back-in { position: absolute; inset: 0; border-radius: 3px; background: var(--shade); color: var(--shade-ink);
   box-shadow: 0 30px 60px -30px #000, 0 2px 4px #0006; padding: 7% 7.5% 6%; display: flex; flex-direction: column; gap: .8em;
-  overflow-y: auto; scrollbar-width: none; font-size: inherit; line-height: 1.4; }
+  overflow: hidden; font-size: inherit; line-height: 1.4; }
+/* No scrolling box on the back: inside a 3D turn, browsers draw one as a
+   flat layer, and its edges stretch with the angle. Everything has a fixed
+   room instead. */
 .back-in header { display: flex; gap: .6em; align-items: flex-start; }
 .back-in header > div { flex: 1; min-width: 0; }
 .back-in h3 { margin: 0; font: 600 1.5em/1.1 var(--serif); color: var(--shade-ink); text-wrap: balance; }
 .back-in .by { margin-top: .2em; color: var(--shade-dim); }
-.back-in .pen { flex: none; width: 2.5em; height: 2.5em; margin: -.3em -.4em 0 0; border: 0; border-radius: 50%; padding: 0; display: grid; place-items: center;
+.back-in .pen { position: relative; flex: none; width: 2.6em; height: 2.6em; margin: -.3em -.4em 0 0; border: 0; border-radius: 50%; padding: 0; display: grid; place-items: center;
   background: color-mix(in srgb, var(--shade-ink) 8%, transparent); color: var(--shade-ink); }
 .back-in .pen .i { width: 1.3em; height: 1.3em; }
+.back-in .pen::before { content: ""; position: absolute; inset: -12px; } /* a finger-sized target */
 .back-in.editing .pen { background: var(--shade-ink); color: var(--shade); }
 .back-in dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .4em 1em; padding-top: .7em;
-  border-top: 1px solid color-mix(in srgb, var(--shade-dim) 35%, transparent); }
+  background: linear-gradient(color-mix(in srgb, var(--shade-dim) 35%, transparent), color-mix(in srgb, var(--shade-dim) 35%, transparent)) top / 100% 1px no-repeat; }
 .back-in dt { font-size: .74em; letter-spacing: .07em; text-transform: uppercase; color: var(--shade-dim); padding-top: .2em; }
 .back-in dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .back-in dd.ok { color: color-mix(in srgb, #2f7a3e 80%, var(--shade-ink)); font-weight: 600; }
@@ -82,7 +87,7 @@ input.tag.add::placeholder { color: var(--shade-dim); }
 @keyframes shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
 
 /* ----------------------------------------------------- search panel -- */
-.search-panel { position: absolute; z-index: 30; left: 0; right: 0; top: 0; padding: 0 16px; will-change: transform; }
+.search-panel { position: absolute; z-index: 30; left: 0; right: 0; top: 0; padding: 0 max(16px, calc((100% - 1100px) / 2 + 16px)); will-change: transform; }
 .search-opts { display: flex; gap: 8px; margin: 10px 0; align-items: center; }
 .search-opts .seg { flex: 1; width: auto; margin: 0; }
 .group-btn { flex: none; border: 0; border-radius: 11px; background: var(--raise); color: var(--text2); font-size: 13px; font-weight: 500;
@@ -102,7 +107,7 @@ input.tag.add::placeholder { color: var(--shade-dim); }
 /* An empty collection: the person's own calling card, and two ways to begin. */
 .first-run { position: absolute; z-index: 5; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 14px; padding: calc(90px + var(--safe-t)) 28px calc(var(--tabs) + var(--safe-b) + 24px); text-align: center; }
-.me-card { width: min(210px, 56vw); border: 0; border-radius: 4px; padding: 5.5%; background: var(--paper); color: var(--ink); text-align: left;
+.me-card { display: flex; flex-direction: column; align-items: stretch; width: min(210px, 56vw); flex: none; border: 0; border-radius: 4px; padding: 12px; background: var(--paper); color: var(--ink); text-align: left;
   box-shadow: 0 30px 60px -30px #000, 0 2px 4px #0006; transform: rotate(-2deg); }
 .me-art canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
 .me-card b { display: block; font: 600 17px/1.2 var(--serif); margin-top: 10px; }

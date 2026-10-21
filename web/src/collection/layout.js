@@ -14,6 +14,8 @@
  * top, bottom: room kept for bars; lead: extra room above the months (search). */
 
 const GAP = 6, PAD = 16;
+/** The widest the grid gets; wider screens keep margins. */
+export const MAX_W = 1100;
 
 /** Monday-based week start, local time. @param {number} ms */
 export function weekStart(ms) {
@@ -48,7 +50,7 @@ export function groupKey(level, by, c) {
 }
 
 /** Columns: tiles keep a comfortable size on any screen — more of them, not giants. @param {0|1} level @param {number} W */
-export const columns = (level, W) => (level === 0 ? Math.max(5, Math.round(W / 84)) : Math.max(3, Math.round(W / 150)));
+export const columns = (level, W) => { const w = Math.min(W, MAX_W); return level === 0 ? Math.max(5, Math.round(w / 84)) : Math.max(3, Math.round(w / 150)); };
 
 /**
  * A grid level: every card's rectangle (in content coordinates, before
@@ -59,14 +61,16 @@ export const columns = (level, W) => (level === 0 ? Math.max(5, Math.round(W / 8
  */
 export function grid(level, groups, f) {
   const cols = columns(level, f.W);
-  const s = (f.W - 2 * PAD - (cols - 1) * GAP) / cols;
+  // On a wide screen the grid keeps a readable width, centred.
+  const pad = Math.max(PAD, (f.W - MAX_W) / 2 + PAD);
+  const s = (f.W - 2 * pad - (cols - 1) * GAP) / cols;
   const top = f.top + (level === 0 ? f.lead : 0);
   /** @type {Map<T, Rect>} */
   const rects = new Map();
   /** @type {{key: string, cards: T[], x: number, y: number, w: number}[]} */
   const labels = [];
   let k = 0;
-  const at = () => ({ x: PAD + (k % cols) * (s + GAP), y: top + Math.floor(k / cols) * (s + GAP), w: s });
+  const at = () => ({ x: pad + (k % cols) * (s + GAP), y: top + Math.floor(k / cols) * (s + GAP), w: s });
   for (const g of groups) {
     labels.push({ ...g, ...at() });
     k++;
