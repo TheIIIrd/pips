@@ -4,7 +4,8 @@
 //
 // Tags and the note change only after the pencil: a stray touch never
 // opens a keyboard. Both have a fixed room, like a real card: two rows of
-// at most five tags, and a ruled box that takes what fits and no more.
+// tags (the rest behind a "+N" chip), and a ruled box that
+// takes what fits and no more.
 
 import { h, icon, fitBytes } from '../dom.js';
 import { t, date } from '../i18n.js';
@@ -56,24 +57,58 @@ export function cardBack(entry, o) {
     facts.append(h('dt'), h('dd', {}, h('button', { type: 'button', class: 'mini-btn', onclick: () => o.onAuthor(card.author) }, t('back.more', others))));
   }
 
-  // Tags: filters outside editing, removable inside it.
+  // Tags: filters outside editing, removable inside it. Two rows show
+  // what fits; the rest wait behind a "+N" chip that opens them all.
   const tags = h('div', { class: 'tags' });
-  const fits = () => {
-    const last = /** @type {HTMLElement|null} */ (tags.lastElementChild);
-    return !last || last.offsetTop - tags.offsetTop + last.offsetHeight <= tags.clientHeight + 1;
-  };
+  const all = h('div', { class: 'tags-all', hidden: true });
+  /** @param {string} tag @param {string[]} list */
+  const chip = (tag, list) => h('button', {
+    type: 'button', class: 'tag', title: t(o.editing ? 'back.tag.remove' : 'back.tag.filter'),
+    onclick: o.editing ? () => save(list.filter((x) => x !== tag)) : () => o.onTag(tag),
+  }, `#${tag}`);
   const drawTags = () => {
     const list = rec.tags ?? [];
-    tags.replaceChildren(...list.map((tag) => h('button', {
-      type: 'button', class: 'tag', title: t(o.editing ? 'back.tag.remove' : 'back.tag.filter'),
-      onclick: o.editing ? () => save(list.filter((x) => x !== tag)) : () => o.onTag(tag),
-    }, `#${tag}`)));
-    if (!o.editing && !list.length) tags.append(h('span', { class: 'hint' }, t('back.tags.none')));
-    if (!o.editing || list.length >= MAX_TAGS) return;
-    const add = h('button', { type: 'button', class: 'tag add', onclick: () => edit(add) }, t('back.tag.add'));
-    tags.append(add);
-    if (!fits()) add.remove(); // the two rows are full
+    const kids = [];
+    // In editing, adding comes first, so it is never among the hidden ones.
+    if (o.editing && list.length < MAX_TAGS) {
+      const add = h('button', { type: 'button', class: 'tag add', onclick: () => edit(add) }, t('back.tag.add'));
+      kids.push(add);
+    }
+    kids.push(...list.map((tag) => chip(tag, list)));
+    if (!o.editing && !list.length) kids.push(h('span', { class: 'hint' }, t('back.tags.none')));
+    tags.replaceChildren(...kids);
+    fold();
+    if (!all.hidden) openAll();
   };
+  /** Hides the chips past the second row behind "+N". */
+  const fold = () => {
+    if (!tags.isConnected || !tags.clientHeight) return;
+    tags.querySelector('.more')?.remove();
+    const chips = /** @type {HTMLElement[]} */ ([...tags.children]);
+    for (const c of chips) c.hidden = false;
+    const below = (/** @type {HTMLElement} */ c) => c.offsetTop - tags.offsetTop + c.offsetHeight > tags.clientHeight + 1;
+    if (!chips.some(below)) return;
+    const more = h('button', { type: 'button', class: 'tag more', onclick: () => openAll() });
+    tags.append(more);
+    let hidden = 0;
+    for (let k = chips.length - 1; k >= 0 && (below(more) || chips.slice(0, k + 1).some(below)); k--) {
+      if (chips[k].classList.contains('add')) continue;
+      chips[k].hidden = true;
+      hidden++;
+      more.textContent = `+${hidden}`;
+    }
+    more.setAttribute('aria-label', t('back.tags.all', (rec.tags ?? []).length));
+  };
+  /** Every tag at once, over the lower part of the back. */
+  const openAll = () => {
+    const list = rec.tags ?? [];
+    all.replaceChildren(
+      h('div', { class: 'tags-all-head' }, h('b', {}, t('back.tags.all', list.length)),
+        h('button', { type: 'button', class: 'mini-btn', onclick: () => { all.hidden = true; } }, t('back.done'))),
+      h('div', { class: 'tags-all-list' }, list.map((tag) => chip(tag, list))));
+    all.hidden = false;
+  };
+  new ResizeObserver(() => fold()).observe(tags);
   /** @param {string[]} list */
   const save = (list) => {
     setTags(rec.digest, list);
@@ -94,13 +129,7 @@ export function cardBack(entry, o) {
       over = true;
       const v = normalTag(input.value), list = rec.tags ?? [];
       if (!keep || !v || list.includes(v)) return drawTags();
-      save([...list, v]);
-      // A tag that would need a third row does not go in.
-      const chip = /** @type {HTMLElement} */ (tags.children[list.length]);
-      if (chip.offsetTop - tags.offsetTop + chip.offsetHeight > tags.clientHeight + 1) {
-        save(list);
-        shake(tags);
-      }
+      save([v, ...list]); // newest first: it stays in sight
     };
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); });
     input.addEventListener('blur', () => finish(true));
@@ -127,7 +156,7 @@ export function cardBack(entry, o) {
     setNote(rec.digest, v);
   });
 
-  const el = h('div', { class: `back-in${o.editing ? ' editing' : ''}` }, head, facts, tags, note);
+  const el = h('div', { class: `back-in${o.editing ? ' editing' : ''}` }, head, facts, tags, note, all);
   return { el };
 }
 

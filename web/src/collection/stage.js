@@ -132,7 +132,7 @@ export function createStage(o) {
           r.y += dragY.v;
         }
       }
-      const hgt = r.w + (r.w * 0.17 + 8) * r.cap;
+      const hgt = r.w + (r.w * 0.19 + 10) * r.cap; // as .cap in app.css
       c.rr = { x: r.x, y: r.y, w: r.w, h: hgt, cap: r.cap };
       const s = c.el.style;
       s.width = `${r.w}px`;

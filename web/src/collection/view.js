@@ -335,11 +335,31 @@ export function collectionView(o) {
       stopSelect();
       sync();
       const ids = list.map((c) => c.id);
-      toast(t(`moved.${to}`, ids.length), { label: t('toast.undo'), run: () => relocate(ids, from) });
+      moved(ids, from, to);
       stripHold = performance.now() + 1300;
       setTimeout(() => stage.kick(), 1350); // the frame loop sleeps when nothing moves
     }, start - now + (list.length - 1) * gap + dur + 40);
   }
+
+  /**
+   * Says what moved, with one undo for the whole series: cards sent the
+   * same way one after another, while the toast is still up, come back
+   * together. @param {string[]} ids @param {Place} from @param {Place} to
+   */
+  function moved(ids, from, to) {
+    const now = performance.now();
+    if (series && series.from === from && series.to === to && now - series.at < SERIES_MS) for (const id of ids) series.ids.add(id);
+    else series = { from, to, ids: new Set(ids), at: now };
+    series.at = now;
+    const s = series;
+    toast(t(`moved.${to}`, s.ids.size), {
+      label: t('toast.undo'),
+      run: () => { if (series === s) series = null; relocate([...s.ids], s.from); },
+    });
+  }
+  /** @type {null | {from: Place, to: Place, ids: Set<string>, at: number}} */
+  let series = null;
+  const SERIES_MS = 5000; // as long as a toast with an action stays
 
   /** Moves cards without a flight: they fade out here, or in. @param {string[]} ids @param {Place} to */
   async function relocate(ids, to) {
@@ -353,13 +373,13 @@ export function collectionView(o) {
     const from = filter.place;
     await relocate(ids, 'trash');
     stopSelect();
-    toast(t('moved.trash', ids.length), { label: t('toast.undo'), run: () => relocate(ids, from) });
+    moved(ids, from, 'trash');
   }
   /** @param {string[]} ids */
   async function restore(ids) {
     await relocate(ids, 'collection');
     stopSelect();
-    toast(t('moved.collection', ids.length), { label: t('toast.undo'), run: () => relocate(ids, 'trash') });
+    moved(ids, 'trash', 'collection');
   }
   /** @param {string[]} ids */
   async function purgeAll(ids) {
