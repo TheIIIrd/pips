@@ -262,7 +262,14 @@ export function createStage(o) {
         const f0 = feed.v, n = list.length - 1, step = feedWidth(o.frame()) * 0.66;
         return {
           move: (q) => { feed.set(rubber(f0 - q.dx / step, 0, n, 0.3)); kick(); },
-          end: (_q, v) => { feed.to = clamp(Math.round(feed.v - (v.x / step) * 0.38), 0, n); kick(); },
+          end: (_q, v) => {
+            // A flick carries on as a thrown card would: the faster, the
+            // further (up to a few cards), then the spring settles it.
+            const throwBy = clamp((-v.x / step) * 0.75, -5, 5);
+            feed.to = clamp(Math.round(feed.v + throwBy), 0, n);
+            feed.vel = clamp(-v.x / step, -12, 12); // it keeps the finger's speed
+            kick();
+          },
         };
       }
       return o.turn();

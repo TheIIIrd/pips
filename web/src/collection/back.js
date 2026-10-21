@@ -29,10 +29,10 @@ export function cardBack(entry, o) {
   const { card, rec, author } = entry;
   const by = card.author ? `@${card.author}` : '—';
 
-  const pen = h('button', {
-    type: 'button', class: 'pen', 'aria-label': t(o.editing ? 'back.done' : 'back.edit'), title: t(o.editing ? 'back.done' : 'back.edit'),
-    onclick: () => o.onEdit(!o.editing),
-  }, icon(o.editing ? 'check' : 'pen'));
+  // Editing switches in place: the back is never rebuilt for it (a rebuilt
+  // face inside a 3D turn leaves stale paint behind in Firefox).
+  let editing = o.editing;
+  const pen = h('button', { type: 'button', class: 'pen', onclick: () => o.onEdit(!editing) });
   const head = h('header', {}, h('div', {}, h('h3', {}, card.title || '—'), h('div', { class: 'by' }, by)), pen);
 
   const facts = h('dl');
@@ -63,19 +63,19 @@ export function cardBack(entry, o) {
   const all = h('div', { class: 'tags-all', hidden: true });
   /** @param {string} tag @param {string[]} list */
   const chip = (tag, list) => h('button', {
-    type: 'button', class: 'tag', title: t(o.editing ? 'back.tag.remove' : 'back.tag.filter'),
-    onclick: o.editing ? () => save(list.filter((x) => x !== tag)) : () => o.onTag(tag),
+    type: 'button', class: 'tag', title: t(editing ? 'back.tag.remove' : 'back.tag.filter'),
+    onclick: editing ? () => save(list.filter((x) => x !== tag)) : () => o.onTag(tag),
   }, `#${tag}`);
   const drawTags = () => {
     const list = rec.tags ?? [];
     const kids = [];
     // In editing, adding comes first, so it is never among the hidden ones.
-    if (o.editing && list.length < MAX_TAGS) {
+    if (editing && list.length < MAX_TAGS) {
       const add = h('button', { type: 'button', class: 'tag add', onclick: () => edit(add) }, t('back.tag.add'));
       kids.push(add);
     }
     kids.push(...list.map((tag) => chip(tag, list)));
-    if (!o.editing && !list.length) kids.push(h('span', { class: 'hint' }, t('back.tags.none')));
+    if (!editing && !list.length) kids.push(h('span', { class: 'hint' }, t('back.tags.none')));
     tags.replaceChildren(...kids);
     fold();
     if (!all.hidden) openAll();
@@ -138,8 +138,8 @@ export function cardBack(entry, o) {
 
   // The note: a fixed, ruled box. What does not fit is not taken.
   const note = /** @type {HTMLTextAreaElement} */ (h('textarea', {
-    'aria-label': t('back.note'), readOnly: !o.editing, tabIndex: o.editing ? 0 : -1,
-    placeholder: t(o.editing ? 'back.note.ph' : 'back.note.none'),
+    'aria-label': t('back.note'), readOnly: !editing, tabIndex: editing ? 0 : -1,
+    placeholder: t(editing ? 'back.note.ph' : 'back.note.none'),
   }));
   note.value = rec.note;
   let kept = rec.note;
@@ -156,8 +156,23 @@ export function cardBack(entry, o) {
     setNote(rec.digest, v);
   });
 
-  const el = h('div', { class: `back-in${o.editing ? ' editing' : ''}` }, head, facts, tags, note, all);
-  return { el };
+  const el = h('div', { class: 'back-in' }, head, facts, tags, note, all);
+  /** @param {boolean} on */
+  const setEditing = (on) => {
+    editing = on;
+    el.classList.toggle('editing', on);
+    pen.replaceChildren(icon(on ? 'check' : 'pen'));
+    pen.setAttribute('aria-label', t(on ? 'back.done' : 'back.edit'));
+    pen.title = t(on ? 'back.done' : 'back.edit');
+    note.readOnly = !on;
+    note.tabIndex = on ? 0 : -1;
+    note.placeholder = t(on ? 'back.note.ph' : 'back.note.none');
+    if (!on) note.blur();
+    all.hidden = true;
+    drawTags();
+  };
+  setEditing(editing);
+  return { el, setEditing };
 }
 
 /** The artist's handle and link, each with a way to copy or open it. @param {any} card */

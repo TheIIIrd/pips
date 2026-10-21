@@ -238,6 +238,17 @@ test('the collection: tags, search, archive and the bin, all without gestures', 
   await p.click('.seg button[data-value="mine"]');
   await p.waitForTimeout(900);
   assert.equal(await shown(), 5, 'the five own sample cards');
+  // Quickly to an empty set and back: the months start right under the
+  // search again, with no room left for "nothing found".
+  await p.fill('.search-field input', 'pixelfox');
+  await p.click('.seg button[data-value="got"]');
+  await p.click('.seg button[data-value="mine"]');
+  await p.waitForTimeout(900);
+  const gap = await p.evaluate(() => Math.min(...[...document.querySelectorAll('.on-stage')].filter((e) => Number(e.style.opacity) > 0.9)
+    .map((e) => e.getBoundingClientRect().top)) - document.querySelector('.search-panel').getBoundingClientRect().bottom);
+  assert.ok(gap >= 0 && gap < 30, `months right under the search (gap ${gap})`);
+  assert.ok(!(await p.isVisible('.search-none')));
+  await p.click('.search-field .clear');
   await p.click('.seg button[data-value="all"]');
   await p.waitForTimeout(900);
 
