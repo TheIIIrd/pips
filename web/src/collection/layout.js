@@ -86,7 +86,7 @@ export function grid(level, groups, f) {
 /** The feed card's width. @param {Frame} f */
 export const feedWidth = (f) => Math.min(f.W * 0.68, (f.H - f.top - f.bottom) * 0.6, 520);
 /** The single card's width. @param {Frame} f */
-export const cardWidth = (f) => Math.min(f.W * 0.84, (f.H - f.top - f.bottom - 24) / 1.26, 560);
+export const cardWidth = (f) => Math.min(f.W * 0.84, (f.H - f.top - f.bottom - 24) / 1.29, 560);
 
 /**
  * A card in the feed (or, with `single`, the card level), `i` places from
@@ -102,9 +102,13 @@ export function feedRect(i, pos, single, f) {
     return { x: (f.W - w) / 2 + d * f.W * 1.05, y: f.top + 8, w, cap: 1, o: a < 0.5 ? 1 : 0, z: 100 };
   }
   const w = feedWidth(f);
-  const off = Math.sign(d) * (Math.min(a, 1) * w * 0.66 + Math.max(0, a - 1) * w * 0.2);
+  // A neighbour moves out fast at first and settles: halfway (when the
+  // two cards swap which is on top) they no longer overlap, so neither
+  // seems to pass through the other.
+  const near = Math.min(a, 1), out = 1 - (1 - near) * (1 - near);
+  const off = Math.sign(d) * (out * w * 0.66 + Math.max(0, a - 1) * w * 0.2);
   const s = 1 - Math.min(a, 1.6) * 0.12;
-  const h = w * 1.26;
+  const h = w * 1.29;
   return {
     x: f.W / 2 - (w * s) / 2 + off,
     y: f.top + (f.H - f.top - f.bottom - h) / 2 + Math.min(a, 1) * 22,

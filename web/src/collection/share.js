@@ -19,8 +19,12 @@ export function fillShare(body, entry) {
   let stop = () => {};
   let release = () => {};
   keepAwake().then((r) => (release = r));
-  const size = Math.min(250, innerWidth * 0.62, innerHeight * 0.34);
+  // As large as comfortable for another phone's camera; the code area
+  // keeps one height whether it shows a code or the numbered-copy panel,
+  // so switching between them does not jump.
+  const size = Math.max(200, Math.min(340, innerWidth - 96, innerHeight * 0.44));
   const code = h('div', { class: 'share-code' });
+  code.style.height = `${size + 28 + 72}px`;
 
   /** @param {Uint8Array} env @param {string} note */
   const showCode = (env, note) => {

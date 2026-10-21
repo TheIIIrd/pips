@@ -132,9 +132,9 @@ textarea.words { width: 100%; min-height: 120px; resize: vertical; border: 0; bo
 .front { padding: 3.6cqw 3.6cqw 0; }
 .art { aspect-ratio: 1; background: color-mix(in srgb, var(--shade) 88%, #000); overflow: hidden; }
 .art canvas { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-.cap { height: calc(17cqw + 8px); min-height: 32px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-.cap b { font: 600 max(11px, 6.2cqw)/1.15 var(--serif); color: var(--shade-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cap i { font-style: normal; font-size: max(10px, 4.6cqw); color: var(--shade-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap { height: calc(19cqw + 10px); min-height: 34px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.cap b { font: 600 max(11px, 6.2cqw)/1.3 var(--serif); color: var(--shade-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap i { font-style: normal; font-size: max(10px, 4.6cqw); line-height: 1.35; color: var(--shade-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .frame.bare .cap { display: none; }
 .frame.bare .front { padding-bottom: 3.6cqw; }
 
@@ -235,3 +235,11 @@ a.btn { text-decoration: none; }
 .paper-text summary { cursor: pointer; display: inline-block; padding: 6px 10px; }
 .paper-text code { display: block; margin-top: 6px; font: 12px/1.5 ui-monospace, monospace; color: var(--text2); overflow-wrap: anywhere; text-align: center; user-select: all; }
 .field .field-btn { width: 40px; height: 40px; margin-right: -8px; color: var(--cobalt-hi); }
+
+/* ------------------------------------------------------------ wide screens -- */
+/* Forms and lists keep a phone's comfortable width, centred; buttons stay
+   the size of what they say instead of crossing the screen. */
+.view:not(.collection-view) > .scroll, .overlay > .scroll, .overlay > .import-body, .onb {
+  padding-left: max(16px, calc((100% - 560px) / 2)); padding-right: max(16px, calc((100% - 560px) / 2)); }
+.view:not(.collection-view) > .bar, .overlay > .bar {
+  padding-left: max(20px, calc((100% - 560px) / 2 + 4px)); padding-right: max(10px, calc((100% - 560px) / 2 - 6px)); }

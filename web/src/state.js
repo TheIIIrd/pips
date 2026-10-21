@@ -152,7 +152,7 @@ export async function purge(digest) {
 export async function setTags(digest, tags) {
   const e = app.cards.get(digest);
   if (!e) return;
-  e.rec = { ...e.rec, tags: [...new Set(tags)].slice(0, 5) };
+  e.rec = { ...e.rec, tags: [...new Set(tags)].slice(0, 16) };
   await store.putCard(e.rec);
   changed();
 }

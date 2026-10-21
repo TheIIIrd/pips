@@ -19,7 +19,7 @@
 .frame.on-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 /* --cap: how much of the caption shows, 0 (a bare tile) … 1 (the full frame). */
 .on-stage .front, .turn .front { padding-bottom: calc(3.6cqw * (1 - var(--cap, 1))); }
-.on-stage .cap, .turn .cap { height: calc((17cqw + 8px) * var(--cap, 1)); min-height: 0; opacity: calc(var(--cap, 1) * 1.4 - .4); }
+.on-stage .cap, .turn .cap { height: calc((19cqw + 10px) * var(--cap, 1)); min-height: 0; opacity: calc(var(--cap, 1) * 1.4 - .4); }
 .collection-view.selecting .on-stage::before { content: ""; position: absolute; z-index: 2; right: 6%; top: 6%; width: 22px; height: 22px; border-radius: 50%;
   background: #0007; box-shadow: inset 0 0 0 1.5px #fffc; }
 .collection-view.selecting .on-stage.chosen::before { background: var(--cobalt-hi) center/70% no-repeat; box-shadow: none;
@@ -71,13 +71,22 @@
 .back-in .tags .hint { margin: 0; color: var(--shade-dim); font-size: .88em; padding: .35em 0; }
 .back-in .tag { height: 1.9em; border: 0; border-radius: 99px; padding: 0 .75em; font-size: .88em; line-height: 1.9em; white-space: nowrap;
   background: color-mix(in srgb, var(--shade-ink) 9%, transparent); color: var(--shade-ink); }
-.back-in.editing .tag:not(.add)::after { content: " ×"; color: var(--shade-dim); }
+.back-in.editing .tag:not(.add, .more)::after { content: " ×"; color: var(--shade-dim); }
+.back-in .tag.more { background: var(--shade-ink); color: var(--shade); font-weight: 600; }
+/* Every tag, when two rows are not enough: over the lower part of the back. */
+.tags-all { position: absolute; left: 0; right: 0; bottom: 0; max-height: 72%; padding: 1em 7.5% 1.2em; display: flex; flex-direction: column; gap: .7em;
+  background: var(--shade); border-radius: 1em 1em 3px 3px; box-shadow: 0 -.6em 1.4em -.6em #0005; }
+.tags-all-head { display: flex; justify-content: space-between; align-items: center; }
+.tags-all-head b { font-size: .8em; letter-spacing: .07em; text-transform: uppercase; color: var(--shade-dim); font-weight: 500; }
+.tags-all-list { display: flex; flex-wrap: wrap; gap: .4em; align-content: flex-start; overflow: hidden; }
 .back-in .tag.add { width: 7em; text-align: left; background: none; color: var(--shade-dim);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--shade-dim) 60%, transparent); }
 input.tag.add { border: 0; color: var(--shade-ink); outline: none; font-family: inherit; }
 input.tag.add::placeholder { color: var(--shade-dim); }
 /* The note is a fixed box: what fits is what can be written, like on paper. */
-.back-in textarea { flex: none; width: 100%; height: calc(4 * 1.45em + 1.1em); line-height: 1.45em; overflow: hidden; resize: none; border: 0;
+/* The note takes the room left on the back (at least five lines); the room
+   is the limit. */
+.back-in textarea { flex: 1 1 auto; width: 100%; min-height: calc(5 * 1.45em + 1.1em); line-height: 1.45em; overflow: hidden; resize: none; border: 0;
   border-radius: .5em; padding: .55em .7em; font: inherit; color: var(--shade-ink); -webkit-user-select: text; user-select: text; touch-action: pan-y;
   background: color-mix(in srgb, var(--shade-ink) 6%, transparent) repeating-linear-gradient(transparent 0 calc(1.45em - 1px),
     color-mix(in srgb, var(--shade-ink) 10%, transparent) calc(1.45em - 1px) 1.45em) content-box; }
@@ -119,8 +128,15 @@ input.tag.add::placeholder { color: var(--shade-dim); }
 .first-run .row-btns { width: min(320px, 100%); margin-top: 4px; }
 
 /* The share sheet's code. */
-.share-code { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+.share-code { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; overflow-y: auto; scrollbar-width: none; }
 .share-code p { margin: 0; font-size: 13px; text-align: center; max-width: 34ch; color: var(--shade-dim); }
 .share-code p.small { font-size: 11.5px; }
 .share-code .qr-box { box-shadow: none; }
 .share-code .edition-panel { width: 100%; margin: 0; color: var(--shade-ink); }
+/* The numbered-copy panel inside the sheet takes the paper's colours. */
+.share-code .field { background: color-mix(in srgb, var(--shade-ink) 7%, transparent); box-shadow: none; }
+.share-code .field:focus-within { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--shade-ink) 40%, transparent); }
+.share-code .field label, .share-code .hint, .share-code .issued-row small { color: var(--shade-dim); }
+.share-code .field input, .share-code .issued-row { color: var(--shade-ink); }
+.share-code .field input::placeholder { color: var(--shade-dim); }
+.share-code .issued-row { border-color: color-mix(in srgb, var(--shade-ink) 12%, transparent); }

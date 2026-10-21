@@ -2,8 +2,9 @@
 // What is shown: the place, whose cards, the search words and tags, and
 // the order. Plain functions of plain data, so they run under node too.
 
-/** Most tags on one card, and the longest, in bytes: pips-store's limits. */
-export const MAX_TAGS = 5;
+/** Most tags on one card, and the longest, in bytes: pips-store's limits.
+ * On the back, two rows show what fits; the rest open from a "+N" chip. */
+export const MAX_TAGS = 16;
 export const MAX_TAG_BYTES = 32;
 
 /** @typedef {'collection'|'archive'|'trash'} Place */
