@@ -125,10 +125,13 @@ export function gestures(el, o) {
     }
     if (pts.size) return;
     const s = g;
+    // The finger's speed is read before the touch is forgotten: it is what
+    // a fling, a throw or a flick carries on with.
+    const v = velocity();
     clearTimeout(s.hold);
     set(null);
     if (s.kind === 'pending' && e.type === 'pointerup') o.tap?.(pt);
-    else if (s.kind === 'drag') s.h?.end(pt, velocity());
+    else if (s.kind === 'drag') s.h?.end(pt, v);
   };
   el.addEventListener('pointerup', up);
   el.addEventListener('pointercancel', up);

@@ -154,8 +154,11 @@ export function collectionView(o) {
     if (lock) { pending = true; return; }
     pending = false;
     for (const id of items.keys()) if (!app.cards.has(id)) items.delete(id);
-    paintChrome(); // first: the search panel's height places the months
-    stage.reflow(select(entries().map(asItem), filter).map((x) => itemFor(x.e)));
+    const next = select(entries().map(asItem), filter).map((x) => itemFor(x.e));
+    // First the panel, for the set about to show: its height (with or
+    // without "nothing found") places the months.
+    paintChrome(next.length);
+    stage.reflow(next);
     turn.invalidate();
     paintChrome();
   }
@@ -469,8 +472,9 @@ export function collectionView(o) {
     paintChrome();
   }
 
-  /** The bar, the panels and the actions, for the current state. */
-  function paintChrome() {
+  /** The bar, the panels and the actions, for the current state.
+   * @param {number} [count] how many cards show (default: the stage's) */
+  function paintChrome(count = stage.list.length) {
     const lv = Math.round(stage.Z.to), filtered = !!(filter.query || filter.owner !== 'all');
     const firstRun = filter.place === 'collection' && !inPlace('collection').length;
     title.textContent = selecting ? t('collection.select-title') : t(PLACE_TITLE[filter.place]);
@@ -479,7 +483,7 @@ export function collectionView(o) {
     sub.textContent = selecting ? t('collection.selected', selected.size)
       : lv <= 1 ? `${t(levelName)} · ${filter.place === 'trash' ? t('collection.bin-note') : t('collection.count', n)}` : t(levelName);
     sub.disabled = selecting || lv > 1;
-    const showChip = filtered && lv >= 1 && !selecting && !firstRun;
+    const showChip = filtered && lv >= 1 && lv <= 2 && !selecting && !firstRun;
     chip.hidden = !showChip;
     sub.hidden = showChip;
     chip.textContent = `${[filter.owner === 'all' ? '' : t(`owner.chip.${filter.owner}`), filter.query].filter(Boolean).join(' · ')}  ×`;
@@ -491,7 +495,7 @@ export function collectionView(o) {
     selBtn.textContent = t(selecting ? 'collection.done' : 'collection.select');
     groupBtn.textContent = t(filter.by === 'author' ? 'group.author' : 'group.date');
     tagChips.update(tagCounts(inPlace(filter.place).map(asItem)).map(([tag, n]) => ({ value: tag, text: `#${tag}`, count: n, on: words(filter.query).includes(`#${tag}`) })));
-    none.hidden = !filtered || stage.list.length > 0;
+    none.hidden = !filtered || count > 0;
     first.el.hidden = !firstRun;
     if (firstRun) coach.hidden = true; else if (coachShown) coach.hidden = false;
     searchPanel.hidden = firstRun;
@@ -520,14 +524,17 @@ export function collectionView(o) {
   }
 
   // -------------------------------------------------------------- the twin --
+  /** @type {null | ReturnType<typeof cardBack>} */
+  let shownBack = null;
   /** @param {string} id */
   function build(id) {
     const e = /** @type {import('../state.js').Entry} */ (app.cards.get(id));
-    const back = cardBack(e, {
+    shownBack = cardBack(e, {
       editing, onEdit: setEditing,
       onTag: (tag) => { setQuery(`#${tag}`); stage.setLevel(0); },
       onAuthor: (nick) => { setQuery(nick); stage.setLevel(0); },
-    }).el;
+    });
+    const back = shownBack.el;
     const s = FRAME_SHADES[e.card.frame] ?? FRAME_SHADES[0];
     back.style.setProperty('--shade', s.paper);
     back.style.setProperty('--shade-ink', s.ink);
@@ -536,8 +543,9 @@ export function collectionView(o) {
   }
   /** @param {boolean} on */
   function setEditing(on) {
+    if (editing === on) return;
     editing = on;
-    turn.invalidate();
+    shownBack?.setEditing(on);
     loop.kick();
   }
 

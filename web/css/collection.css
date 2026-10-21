@@ -141,3 +141,11 @@ input.tag.add::placeholder { color: var(--shade-dim); }
 .share-code .field input, .share-code .issued-row { color: var(--shade-ink); }
 .share-code .field input::placeholder { color: var(--shade-dim); }
 .share-code .issued-row { border-color: color-mix(in srgb, var(--shade-ink) 12%, transparent); }
+/* In the sheet everything is centred on the code's axis: the run-size
+   field is a compact centred box, the button keeps a button's width. */
+.share-code .edition-panel { align-items: center; text-align: center; }
+.share-code .edition-panel .field { width: min(100%, 300px); margin: 0; }
+.share-code .edition-panel .field label { min-width: 0; }
+.share-code .edition-panel .field input { text-align: center; }
+.share-code .edition-panel .btn.wide { width: min(100%, 300px); }
+.share-code .edition-panel .issued { width: min(100%, 300px); text-align: left; }
